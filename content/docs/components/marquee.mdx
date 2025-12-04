@@ -1,0 +1,159 @@
+---
+title: Marquee
+description: A dynamic and customizable sliding component that creates smooth, infinite scrolling animations for showcasing content like testimonials, logos, or announcements.
+component: true
+---
+
+<ComponentPreview
+  name="marquee-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="A marquee component"
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/marquee.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="marquee" title="components/ui/marquee.tsx" />
+
+<Step>Tailwind v4: Update `@/global.css`</Step>
+
+```css showLineNumbers
+@theme inline {
+  --animate-marquee-left: marquee-left var(--duration, 30s) linear infinite;
+  --animate-marquee-right: marquee-right var(--duration, 30s) linear infinite;
+}
+
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+ 
+@keyframes marquee-right {
+  from {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+```
+
+<Step>Tailwind v3: Update `tailwind.config.js`</Step>
+
+```js showLineNumbers
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  theme: {
+    extend: {
+      keyframes: {
+        "marquee-left": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(calc(-100% - var(--gap)))" },
+        },
+        "marquee-right": {
+          from: { transform: "translateX(calc(-100% - var(--gap)))" },
+          to: { transform: "translateX(0)" },
+        },
+      },
+      animation: {
+        "marquee-left": "marquee-left var(--duration, 30s) linear infinite",
+        "marquee-right": "marquee-right var(--duration, 30s) linear infinite",
+      },
+    },
+  },
+};
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+
+## Usage
+
+```tsx showLineNumbers
+import { Marquee } from "@/components/ui/marquee";
+```
+
+```tsx showLineNumbers
+<Marquee>
+  <TestimonialCard />
+</Marquee>
+```
+
+## Props
+
+`marquee` props.
+
+<TypeTable
+  type={{
+    direction: {
+      type: '"left" | "right"',
+      description: "Direction of the scrolling animation.",
+      default: '"left"'
+    },
+    repeat: {
+      type: "number",
+      description: "Number of times the content is repeated.",
+      default: "4"
+    },
+    duration: {
+      type: "number", 
+      description: "Duration of the animation in seconds.",
+      default: "60"
+    },
+    children: {
+      type: "React.ReactNode",
+      description: "The content to be displayed in the marquee."
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes for styling the marquee."
+    }
+  }}
+/>

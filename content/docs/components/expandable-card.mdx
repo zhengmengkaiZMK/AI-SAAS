@@ -1,0 +1,119 @@
+---
+title: Expandable Card
+description: A versatile and engaging UI component that allows users to explore content in a more immersive way.
+component: true
+---
+
+<ComponentPreview
+  name="expandable-card-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Displays an expandable card."
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/expandable-card.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge motion
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="expandable-card" title="components/ui/expandable-card.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { ExpandableCard } from "@/components/ui/expandable-card";
+```
+
+```tsx showLineNumbers
+<ExpandableCard
+  title="Whispering Forest"
+  src="/images/components/expandable-card/haunted-house.webp"
+  description="A Yokai Tale"
+>
+  {content}
+</ExpandableCard>
+```
+
+## Props
+
+`ExpandableCard` props.
+
+<TypeTable
+  type={{
+    title: {
+      type: "string",
+      description: "The title displayed on the card."
+    },
+    src: {
+      type: "string",
+      description: "The URL of the image displayed at the top of the card."
+    },
+    description: {
+      type: "string",
+      description: "A short description displayed below the title."
+    },
+    children: {
+      type: "React.ReactNode",
+      description: "Additional content displayed inside the expanded card."
+    },
+    className: {
+      type: "string",
+      description: "Custom CSS classes for styling the card."
+    },
+    classNameExpanded: {
+      type: "string",
+      description: "CSS classes applied when the card is expanded."
+    },
+    "[key: string]": {
+      type: "any",
+      description: "Any additional props passed to the parent component."
+    }
+  }}
+/>
+
+
+## Credits
+
+This component is inspired by [Linear](https://linear.app/).

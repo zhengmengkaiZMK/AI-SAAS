@@ -1,0 +1,101 @@
+---
+title: Flipping Card
+description: A two-sided card component that flips on hover, revealing content on its back face. Ideal for interactive displays or showcasing additional information.
+component: true
+---
+
+<ComponentPreview
+  name="flipping-card-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="A flipping card with a front and back face"
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/flipping-card.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge
+```
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="flipping-card" title="components/ui/flipping-card.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { FlippingCard } from "@/components/ui/flipping-card";
+```
+
+```tsx showLineNumbers
+<FlippingCard frontContent={<div>Front Content</div>} backContent={<div>Back Content</div>} />
+```
+
+## Props
+
+`FlippingCard` props.
+
+<TypeTable
+  type={{
+    className: {
+      type: "string",
+      description: "Additional CSS classes for styling the flipping card."
+    },
+    height: {
+      type: "number",
+      description: "Height of the card in pixels.",
+      default: "300"
+    },
+    width: {
+      type: "number",
+      description: "Width of the card in pixels.",
+      default: "350"
+    },
+    frontContent: {
+      type: "React.ReactNode",
+      description: "Content to display on the front face of the card."
+    },
+    backContent: {
+      type: "React.ReactNode",
+      description: "Content to display on the back face of the card."
+    }
+  }}
+/>

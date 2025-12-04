@@ -1,0 +1,115 @@
+---
+title: Image Trail
+description: Image Trail adds a dynamic, interactive trail of images that follows the cursor, enhancing user engagement and visual appeal on your website.
+component: true
+---
+
+<ComponentPreview
+  name="image-trail-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Image Trail adds a dynamic, interactive trail of images that follows the cursor, enhancing user engagement and visual appeal on your website."
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/image-trail.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge gsap
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="image-trail" title="components/ui/image-trail.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { ImageTrail } from "@/components/ui/image-trail";
+```
+
+```tsx showLineNumbers
+const imageUrls = [
+  "/images/components/image-trail/image-trail-1.webp",
+  "/images/components/image-trail/image-trail-2.webp",
+  "/images/components/image-trail/image-trail-3.webp",
+  "/images/components/image-trail/image-trail-4.webp",
+  "/images/components/image-trail/image-trail-5.webp",
+];
+```
+
+```tsx showLineNumbers
+<ImageTrail images={imageUrls} imageHeight={150} imageWidth={150} />
+```
+
+## Props
+
+`image-trail` props.
+
+<TypeTable
+  type={{
+    images: {
+      type: "string[]",
+      description: "An array of image URLs to be used in the trail effect.",
+      default: "[]"
+    },
+    imageWidth: {
+      type: "number",
+      description: "The width of each image in the trail (in pixels).",
+      default: "200"
+    },
+    imageHeight: {
+      type: "number",
+      description: "The height of each image in the trail (in pixels).",
+      default: "200"
+    },
+    threshold: {
+      type: "number",
+      description: "The minimum distance the mouse must move to trigger an image change.",
+      default: "50"
+    },
+    duration: {
+      type: "number",
+      description: "The duration (in seconds) of the animation for each image.",
+      default: "1.6"
+    }
+  }}
+/>

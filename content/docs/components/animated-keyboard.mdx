@@ -1,0 +1,169 @@
+---
+title: Animated Keyboard
+description: Displays an animated keyboard with keycaps that can be customized with different colors and variants.
+component: true
+---
+
+<ComponentPreview
+  name="animated-keyboard-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Displays an animated keyboard with keycaps that can be customized with different colors and variants"
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/animated-keyboard.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge framer-motion class-variance-authority
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="animated-keyboard" title="components/ui/animated-keyboard.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Examples
+
+<ComponentPreview
+  name="animated-keyboard-rgb-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Displays an animated keyboard with keycaps that can be customized with different colors and variants"
+  align="center"
+/>
+
+<ComponentPreview
+  name="mini-keyboard-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Displays an animated keyboard with keycaps that can be customized with different colors and variants"
+  align="center"
+/>
+
+## Usage
+
+```tsx showLineNumbers
+import {
+  Keyboard,
+  Keycap,
+  KeyRow,
+} from "@/components/ui/animated-keyboard";
+```
+
+```tsx showLineNumbers
+<Keyboard className="w-full max-w-lg">
+  <KeyRow>
+    <Keycap char="Q" height="42px" />
+    <Keycap char="W" height="42px" />
+    <Keycap char="E" height="42px" />
+    <Keycap char="R" height="42px" />
+    <Keycap char="T" height="42px" />
+    <Keycap char="Y" height="42px" />
+    <Keycap char="U" height="42px" />
+    <Keycap char="I" height="42px" />
+    <Keycap char="O" height="42px" />
+    <Keycap char="P" height="42px" />
+  </KeyRow>
+</Keyboard>
+```
+
+## Props
+
+`Keyboard` props.
+
+<TypeTable
+  type={{
+    children: {
+      type: "React.ReactNode",
+      description: "The keyboard rows and keys to render."
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes."
+    }
+  }}
+/>
+
+`KeyRow` props.
+
+<TypeTable
+  type={{
+    children: {
+      type: "React.ReactNode",
+      description: "The keycaps to render in this row."
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes."
+    }
+  }}
+/>
+
+`Keycap` props.
+
+<TypeTable
+  type={{
+    char: {
+      type: "string",
+      description: "The main character to display on the key."
+    },
+    secondaryChar: {
+      type: "string",
+      description: "Secondary character (usually top-left)."
+    },
+    height: {
+      type: "string",
+      description: "Height of the keycap in CSS units."
+    },
+    variant: {
+      type: '"default" | "double" | "tab" | "caps" | "shift" | "command" | "space"',
+      description: "The keycap variant affecting its width.",
+      default: '"default"'
+    },
+    keylightColor: {
+      type: '"default" | "red" | "blue" | "green" | "purple" | "rgb"',
+      description: "Color theme for the key lighting effect.",
+      default: '"default"'
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes."
+    }
+  }}
+/>

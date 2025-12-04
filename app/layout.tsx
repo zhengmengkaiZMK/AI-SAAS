@@ -22,6 +22,9 @@ export default function RootLayout({
   return (
     <ViewTransitions>
       <html lang="en" suppressHydrationWarning>
+        <head>
+          <meta name="theme-color" content="#ffffff" />
+        </head>
         <body
           className={cn(
             GeistSans.className,

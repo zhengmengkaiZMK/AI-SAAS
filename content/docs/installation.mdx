@@ -1,0 +1,142 @@
+---
+title: Installation
+description: Learn how to install and configure Money New for your development environment.
+---
+
+## Installation Options
+
+Money New can be used in multiple ways depending on your needs:
+
+### Web Application
+
+The easiest way to use Money New is through the web interface:
+
+1. Visit [https://moneynew.com](/)
+2. Sign up for an account
+3. Start using immediately - no installation required
+
+### Development Setup
+
+If you want to run Money New locally or contribute to development:
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- Node.js 18.x or higher
+- npm or yarn package manager
+- Git for version control
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/money-new.git
+cd money-new
+```
+
+## Install Dependencies
+
+Using npm:
+
+```bash
+npm install
+```
+
+Or with yarn:
+
+```bash
+yarn install
+```
+
+## Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```bash
+# Database
+DATABASE_URL="your_database_url"
+
+# Authentication
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your_secret_key"
+
+# API Keys
+STOCK_API_KEY="your_stock_api_key"
+```
+
+## Run Development Server
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Build for Production
+
+Create an optimized production build:
+
+```bash
+npm run build
+npm run start
+```
+
+## Database Setup
+
+Money New uses a PostgreSQL database. Set it up with:
+
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
+
+## Verify Installation
+
+To verify everything is working:
+
+1. Open your browser to `http://localhost:3000`
+2. Sign up for a test account
+3. Add a stock to your dashboard
+4. Create a test note
+
+## Troubleshooting
+
+### Port Already in Use
+
+If port 3000 is occupied, specify a different port:
+
+```bash
+npm run dev -- -p 3001
+```
+
+### Database Connection Issues
+
+Ensure your `DATABASE_URL` is correct and the database is running:
+
+```bash
+psql -h localhost -U postgres -d moneynew
+```
+
+### Missing Dependencies
+
+If you encounter module errors, try:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+## Next Steps
+
+- [Quick Start Guide](/docs/quick-start) - Learn the basics
+- [Component Documentation](/docs/components) - Explore UI components
+- [Dark Mode Setup](/docs/dark-mode) - Configure themes
+
+## System Requirements
+
+- **OS**: macOS, Windows, Linux
+- **RAM**: 4GB minimum, 8GB recommended
+- **Storage**: 500MB for application and dependencies
+- **Browser**: Chrome, Firefox, Safari, or Edge (latest versions)

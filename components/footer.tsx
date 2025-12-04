@@ -1,33 +1,38 @@
+"use client";
 import Link from "next/link";
 import React from "react";
 import { Logo } from "./Logo";
+import { usePathname } from "next/navigation";
 
 export const Footer = () => {
+  const pathname = usePathname();
+  const isZh = pathname.startsWith("/zh");
+
   const links = [
     {
-      name: "Pricing",
-      href: "/pricing",
+      name: isZh ? "价格" : "Pricing",
+      href: isZh ? "/zh/pricing" : "/pricing",
     },
     {
-      name: "Blog",
-      href: "/blog",
+      name: isZh ? "博客" : "Blog",
+      href: isZh ? "/zh/blog" : "/blog",
     },
     {
-      name: "Contact",
-      href: "/contact",
+      name: isZh ? "联系我们" : "Contact",
+      href: isZh ? "/zh/contact" : "/contact",
     },
   ];
   const legal = [
     {
-      name: "Privacy Policy",
+      name: isZh ? "隐私政策" : "Privacy Policy",
       href: "#",
     },
     {
-      name: "Terms of Service",
+      name: isZh ? "服务条款" : "Terms of Service",
       href: "#",
     },
     {
-      name: "Refund Policy",
+      name: isZh ? "退款政策" : "Refund Policy",
       href: "#",
     },
   ];
@@ -45,6 +50,7 @@ export const Footer = () => {
       href: "https://github.com/manuarora700",
     },
   ];
+
   return (
     <div className="relative">
       <div className="border-t border-neutral-100  dark:border-neutral-800 px-8 pt-20 pb-32 relative bg-white dark:bg-black">
@@ -53,8 +59,8 @@ export const Footer = () => {
             <div className="mr-4  md:flex mb-4">
               <Logo />
             </div>
-            <div>Copyright &copy; 2024 Every Labs</div>
-            <div className="mt-2">All rights reserved</div>
+            <div>{isZh ? "版权所有" : "Copyright"} &copy; 2025 Every Labs</div>
+            <div className="mt-2">{isZh ? "保留所有权利" : "All rights reserved"}</div>
           </div>
           <div className="grid grid-cols-3 gap-10 items-start mt-10 md:mt-0">
             <div className="flex justify-center space-y-4 flex-col mt-4">

@@ -1,0 +1,71 @@
+---
+title: "Building your API stack"
+description: "The rise of RESTful APIs has been met by a rise in tools for creating, testing, and managing them."
+category: "Software Engineering"
+date: "2024-01-18"
+author:
+  name: "Lana Steiner"
+  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lana"
+image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop"
+tags: ["Software Development", "Tools"]
+---
+
+## The Modern API Landscape
+
+APIs have become the backbone of modern software development. Whether you're building a mobile app, web service, or integrating third-party services, a solid API stack is essential.
+
+## Essential Components
+
+### 1. API Design
+
+Start with a clear design using OpenAPI (Swagger) specification:
+
+```yaml
+openapi: 3.0.0
+info:
+  title: User API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      summary: Get all users
+      responses:
+        '200':
+          description: Success
+```
+
+### 2. Development Tools
+
+<Callout>
+**Recommended tools**: Postman for testing, Insomnia for GraphQL, and Thunder Client for VS Code integration.
+</Callout>
+
+### 3. Authentication & Security
+
+Implement proper authentication using JWT or OAuth 2.0. Never store sensitive data in plain text.
+
+## Best Practices
+
+1. Version your APIs from day one
+2. Implement rate limiting
+3. Provide comprehensive documentation
+4. Use proper HTTP status codes
+5. Design for scalability
+
+## Testing Strategy
+
+Write integration tests for your API endpoints. Use tools like Jest, Supertest, or Postman's test runner.
+
+```javascript
+describe('User API', () => {
+  it('should return all users', async () => {
+    const response = await request(app).get('/api/users')
+    expect(response.status).toBe(200)
+    expect(response.body).toBeInstanceOf(Array)
+  })
+})
+```
+
+## Conclusion
+
+Building a robust API stack requires careful planning and the right tools. Start simple, iterate, and always keep your consumers in mind.

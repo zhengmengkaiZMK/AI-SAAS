@@ -1,0 +1,208 @@
+---
+title: Cloud Orbit
+description: This component creates a dynamic and interactive experience, where each icon orbits in a fluid motion. Fully customizable, it's ideal for showcasing your tech stack or the tools your product uses.
+component: true
+---
+
+<ComponentPreview
+  name="cloud-orbit-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="A cloud orbit component"
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/cloud-orbit.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge motion
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="cloud-orbit" title="components/ui/cloud-orbit.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+
+## Usage
+
+```tsx showLineNumbers
+import { CloudOrbit, OrbitingImage } from "@/registry/components/cloud-orbit";
+```
+
+```tsx showLineNumbers
+const orbitingImagesData = [
+  {
+    speed: 20,
+    radius: 119,
+    size: 53,
+    startAt: 0.15625,
+    images: [
+      {
+        name: "Deepseek Logo",
+        url: "/images/components/cloud-orbit/deepseek-logo.webp",
+      },
+      {
+        name: "Drizzle ORM Logo",
+        url: "/images/components/cloud-orbit/drizzle-orm-logo.webp",
+      },
+    ],
+  },
+  ...
+];
+```
+
+```tsx showLineNumbers
+<CloudOrbit
+  duration={3}
+  size={160}
+  images={[
+    {
+      name: "Charlie Avatar",
+      url: "/images/components/cloud-orbit/avatar-1.webp",
+    },
+    {
+      name: "Tommy Avatar",
+      url: "/images/components/cloud-orbit/avatar-2.webp",
+    },
+  ]}
+  className=""
+>
+  {orbitingImagesData.map((orbit, index) => (
+    <OrbitingImage
+      key={index}
+      speed={orbit.speed}
+      radius={orbit.radius}
+      size={orbit.size}
+      startAt={orbit.startAt}
+      images={orbit.images}
+    />
+  ))}
+</CloudOrbit>
+```
+
+<Callout>
+Placing the icons at the correct angle can be a bit tricky. For easier setup, use the positions from the demo and adjust them visually. If you need help, just reach out!
+</Callout>
+
+## Props
+
+`cloud-orbit` props.
+
+<TypeTable
+  type={{
+    duration: {
+      type: "number",
+      description: "Duration of the animation cycle in seconds.",
+      default: "3"
+    },
+    children: {
+      type: "React.ReactNode",
+      description: "Child elements to be rendered inside the component."
+    },
+    size: {
+      type: "number",
+      description: "Size of the main orbit container in pixels.",
+      default: "160"
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes for styling."
+    },
+    images: {
+      type: "Array<Object>",
+      description: "Array of image objects, each containing a `url` and `name`.",
+      default: "[]"
+    },
+    props: {
+      type: "Record<string, any>",
+      description: "Additional HTML attributes for the component's wrapper div."
+    }
+  }}
+/>
+
+`orbiting-image` props.
+
+<TypeTable
+  type={{
+    speed: {
+      type: "number",
+      description: "Speed of the orbiting motion (lower is slower).",
+      default: "20"
+    },
+    radius: {
+      type: "number",
+      description: "Radius of the orbit path in pixels.",
+      default: "100"
+    },
+    startAt: {
+      type: "number",
+      description: "Delay before animation starts, in seconds.",
+      default: "0"
+    },
+    size: {
+      type: "number",
+      description: "Size of each orbiting image in pixels.",
+      default: "80"
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes for styling."
+    },
+    images: {
+      type: "Array<Object>",
+      description: "Array of image objects, each containing a `url` and `name`.",
+      default: "[]"
+    },
+    duration: {
+      type: "number",
+      description: "Duration of the animation cycle for each orbiting image.",
+      default: "3"
+    },
+    props: {
+      type: "Record<string, any>",
+      description: "Additional HTML attributes for the component's wrapper div."
+    }
+  }}
+/>
+
+## Disclaimer
+
+We are not affiliated with any of the brands whose logos are used in this component. These logos are displayed for demonstration purposes only.

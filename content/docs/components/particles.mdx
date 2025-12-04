@@ -1,0 +1,124 @@
+---
+title: Particles
+description: A versatile and performant component for creating engaging, animated content displays with smooth infinite scrolling animations. Perfect for showcasing client logos, testimonials, feature highlights, and promotional content with customizable speed, direction, and responsive design.
+component: true
+---
+
+<ComponentPreview
+  name="particles-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="A particles component"
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/particles.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge @tsparticles/react @tsparticles/slim
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="particles" title="components/ui/particles.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Examples
+
+<ComponentPreview
+  name="particles-stars-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Displays a particles component"
+  align="center"
+/>
+
+<ComponentPreview
+  name="particles-snow-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Displays a particles component with snow variant"
+  align="center"
+/>
+
+## Usage
+
+```tsx showLineNumbers
+import { Particles } from "@/components/ui/particles";
+```
+
+```tsx showLineNumbers
+<Particles variant="snow" />
+```
+
+## Props
+
+`particles` props.
+
+<TypeTable
+  type={{
+    className: {
+      type: "string",
+      description: "Additional CSS classes to apply to the component"
+    },
+    variant: {
+      type: '"default" | "snow" | "stars"',
+      description: "The visual style of the particles",
+      default: '"default"'
+    },
+    style: {
+      type: "ParticleStyle",
+      description: "Custom particle styling options",
+      default: "{}"
+    },
+    interactive: {
+      type: "boolean",
+      description: "Whether particles should respond to mouse interactions",
+      default: "true"
+    },
+    customOptions: {
+      type: "Record",
+      description: "Additional configuration options for the particles engine",
+      default: "{}"
+    }
+  }}
+/>
+
+## Credits
+
+All credits goes to [tsparticles](https://github.com/matteobruni/tsparticles).

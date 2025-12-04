@@ -20,6 +20,7 @@
 html {
   scroll-padding-top: 80px; /* Adjust this value based on your navbar height */
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 @layer utilities {

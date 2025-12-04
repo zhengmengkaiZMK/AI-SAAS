@@ -1,0 +1,124 @@
+---
+title: Social Proof Avatars
+description: A component that displays user avatars with optional extra count and star ratings, ideal for showcasing social proof.
+component: true
+---
+
+<ComponentPreview
+  name="social-proof-avatars-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="A social proof avatars component"
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/social-proof-avatars.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="social-proof-avatars" title="components/ui/social-proof-avatars.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+
+## Usage
+
+```tsx showLineNumbers
+import { SocialProofAvatars } from "@/components/ui/social-proof-avatars";
+```
+
+```tsx showLineNumbers
+const avatars = [
+  {
+    alt: "Avatar 1",
+    src: "/images/components/avatar-proof/avatar-1.webp",
+  },
+  {
+    alt: "Avatar 2",
+    src: "/images/components/avatar-proof/avatar-2.webp",
+  },
+  ...
+];
+```
+
+```tsx showLineNumbers
+<SocialProofAvatars avatars={avatars} extraCount={70}>
+  <p className="whitespace-nowrap">
+    +70 <strong className="font-semibold">satisfied</strong> clients
+  </p>
+</SocialProofAvatars>
+```
+
+## Props
+
+`social-proof-avatars` props.
+
+<TypeTable
+  type={{
+    avatars: {
+      type: "Avatar[]",
+      description: "Array of avatar objects containing `src` and `alt` properties."
+    },
+    extraCount: {
+      type: "number",
+      description: "Number of extra avatars, displayed as a \"+X\" count."
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes."
+    },
+    stars: {
+      type: "boolean",
+      description: "Whether to display star ratings (default is `true`).",
+      default: "true"
+    },
+    children: {
+      type: "React.ReactNode",
+      description: "Any child elements to be rendered within the component."
+    },
+    props: {
+      type: "React.HTMLAttributes<HTMLDivElement>",
+      description: "Additional HTML attributes for the wrapping `div`."
+    }
+  }}
+/>

@@ -1,6 +1,5 @@
 "use client";
 import { Logo } from "../Logo";
-import { Button } from "../button";
 import { NavBarItem } from "./navbar-item";
 import {
   useMotionValueEvent,
@@ -10,8 +9,9 @@ import {
 } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { Link } from "next-view-transitions";
-import { ModeToggle } from "../mode-toggle";
+import { LanguageSwitcher } from "../language-switcher";
+import { ModeSwitcher } from "../mode-switcher";
+import { ActionButton } from "../action-button";
 
 type Props = {
   navItems: {
@@ -65,13 +65,11 @@ export const DesktopNavbar = ({ navItems }: Props) => {
         </div>
       </div>
       <div className="flex space-x-2 items-center">
-        <ModeToggle />
-        <Button variant="simple" as={Link} href="/login">
-          Login
-        </Button>
-        <Button as={Link} href="/signup">
-          Sign Up
-        </Button>
+        <LanguageSwitcher />
+        <div className="h-5 w-px bg-neutral-200 dark:bg-neutral-700 mx-2" />
+        <ModeSwitcher />
+        <div className="h-5 w-px bg-neutral-200 dark:bg-neutral-700 mx-2" />
+        <ActionButton />
       </div>
     </div>
   );

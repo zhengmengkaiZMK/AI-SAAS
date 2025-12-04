@@ -1,0 +1,154 @@
+---
+title: Cursor Cards
+description: Interactive cards with animated gradient borders that respond to cursor movement and proximity. Inspired by Cursor's website.
+component: true
+---
+
+<ComponentPreview
+  name="cursor-card-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Displays a card with a cursor effect that adapts to the size of the container."
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/cursor-cards.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge motion
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="cursor-cards" title="components/ui/cursor-cards.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Usage
+
+```tsx showLineNumbers
+import {
+  CursorCardsContainer,
+  CursorCard
+} from "@/components/ui/cursor-cards";
+```
+
+```tsx showLineNumbers
+<CursorCardsContainer>
+  <CursorCard>
+    <div className="h-full w-full py-4 px-6 max-w-72 space-y-2">
+      <h3 className="font-gilroy text-2xl">Cursor Card</h3>
+      <p className="text-sm">
+        This is a cursor card component.
+      </p>
+    </div>
+  </CursorCard>
+</CursorCardsContainer>
+```
+
+## Props
+
+`cursor-cards-container` props.
+
+<TypeTable
+  type={{
+    children: {
+      type: "React.ReactNode",
+      description: "The child components to render inside the container."
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes."
+    },
+    proximityRange: {
+      type: "number",
+      description: "Range in pixels for detecting mouse proximity.",
+      default: "400"
+    }
+  }}
+/>
+
+`cursor-card` props.
+
+<TypeTable
+  type={{
+    children: {
+      type: "React.ReactNode",
+      description: "The content to render inside the card."
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes."
+    },
+    illuminationRadius: {
+      type: "number",
+      description: "Radius of the illumination effect in pixels.",
+      default: "200"
+    },
+    illuminationColor: {
+      type: "string",
+      description: "Color of the illumination effect.",
+      default: '"#FFFFFF10"'
+    },
+    illuminationOpacity: {
+      type: "number",
+      description: "Opacity of the illumination effect (0-1).",
+      default: "0.8"
+    },
+    primaryHue: {
+      type: "string",
+      description: "Primary color for the gradient border.",
+      default: '"#93C5FD"'
+    },
+    secondaryHue: {
+      type: "string",
+      description: "Secondary color for the gradient border.",
+      default: '"#2563EB"'
+    },
+    borderColor: {
+      type: "string",
+      description: "Default border color when not hovering.",
+      default: '"#E5E5E5"'
+    }
+  }}
+/>
+
+## Credits
+
+This component is inspired by [Cursor](https://www.cursor.com/).

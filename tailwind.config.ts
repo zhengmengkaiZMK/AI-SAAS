@@ -28,6 +28,7 @@ const config: Config = {
           "scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite",
         marquee: "marquee var(--marquee-duration) linear infinite",
         "fade-in": "fade-in 0.5s linear forwards",
+        "star-btn": "star-btn calc(var(--duration) * 1s) linear infinite",
       },
       boxShadow: {
         derek: `0px 0px 0px 1px rgb(0 0 0 / 0.06),
@@ -55,6 +56,14 @@ const config: Config = {
           },
           to: {
             opacity: "1",
+          },
+        },
+        "star-btn": {
+          "0%": {
+            offsetDistance: "0%",
+          },
+          "100%": {
+            offsetDistance: "100%",
           },
         },
       },

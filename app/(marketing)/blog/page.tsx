@@ -1,5 +1,5 @@
 import { type Metadata } from "next";
-import { getAllBlogs } from "@/lib/blog";
+import { getAllBlogPosts } from "@/lib/blog-utils";
 import { Background } from "@/components/background";
 import { Container } from "@/components/container";
 import { Heading } from "@/components/heading";
@@ -16,7 +16,20 @@ export const metadata: Metadata = {
 };
 
 export default async function ArticlesIndex() {
-  let blogs = await getAllBlogs();
+  const blogPosts = getAllBlogPosts();
+  
+  // Convert to old blog format with correct author structure
+  const blogs = blogPosts.map(post => ({
+    title: post.title,
+    description: post.description,
+    date: post.date,
+    image: post.image,
+    slug: post.slug,
+    author: {
+      name: post.author.name,
+      src: post.author.avatar,
+    },
+  }));
 
   return (
     <div className="relative overflow-hidden py-20 md:py-0">

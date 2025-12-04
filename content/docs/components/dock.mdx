@@ -1,0 +1,168 @@
+---
+title: Dock
+description: An interactive icon dock that smoothly scales icons/images on hover, providing a responsive and engaging visual effect.
+component: true
+---
+
+<ComponentPreview
+  name="dock-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="Displays a dock with a smooth scaling effect that adapts to the size of the container."
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/dock.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge motion
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="dock" title="components/ui/dock.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { Dock, DockIcon } from "@/components/ui/dock";
+```
+
+```tsx showLineNumbers
+<Dock>
+  <DockIcon
+    src="/images/components/dock/tailwindcss-logo.webp"
+    name="TailwindCSS"
+    href="#tailwindcss"
+  />
+  <DockIcon
+    name="Edge"
+    src="/images/components/dock/edge-logo.webp"
+    href="#linear"
+  />
+  <DockIcon
+    name="Motion"
+    src="/images/components/dock/motion-logo.webp"
+    href="#motion"
+  />
+  ...
+</Dock>
+```
+
+<Callout>
+You can also pass icons as children if you don't want to use an image.
+</Callout>
+
+```tsx showLineNumbers
+<Dock className="[&_svg]:size-6">
+  <DockIcon name="Settings" href="#setings">
+    <SettingsIcon>
+  </DockIcon>
+  ...
+</Dock>
+```
+
+## Props
+
+`Dock` props.
+
+<TypeTable
+  type={{
+    className: {
+      type: "string",
+      description: "Additional custom classes for styling."
+    },
+    children: {
+      type: "React.ReactNode",
+      description: "Child elements to be rendered inside the Dock."
+    },
+    maxAdditionalSize: {
+      type: "number",
+      description: "Maximum additional size applied when hovering over icons.",
+      default: "5"
+    },
+    iconSize: {
+      type: "number",
+      description: "Default size of the icons in pixels.",
+      default: "55"
+    }
+  }}
+/>
+
+`DockIcon` props.
+
+<TypeTable
+  type={{
+    className: {
+      type: "string",
+      description: "Additional custom classes for styling."
+    },
+    src: {
+      type: "string",
+      description: "The source URL for the icon image."
+    },
+    href: {
+      type: "string",
+      description: "The link the icon should navigate to when clicked."
+    },
+    name: {
+      type: "string",
+      description: "The name of the icon, displayed as a tooltip on hover."
+    },
+    handleIconHover: {
+      type: "(e: React.MouseEvent<HTMLLIElement>) => void",
+      description: "Function to handle hover events on the icon."
+    },
+    children: {
+      type: "React.ReactNode",
+      description: "Alternative to `src`: allows passing custom JSX elements."
+    },
+    iconSize: {
+      type: "number",
+      description: "The size of the icon in pixels.",
+      default: "55"
+    }
+  }}
+/>
+
+## Disclaimer
+
+We are not affiliated with any of the brands whose logos are used in this component. These logos are displayed for demonstration purposes only.

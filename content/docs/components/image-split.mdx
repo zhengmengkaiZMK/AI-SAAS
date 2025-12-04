@@ -1,0 +1,130 @@
+---
+title: Image Split
+description: This component provides a dynamic and visually captivating way to display images split into multiple sections.
+component: true
+---
+
+<ComponentPreview
+  name="image-split-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="This component provides a dynamic and visually captivating way to display images split into multiple sections."
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/image-split.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge motion
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="image-split" title="components/ui/image-split.tsx" />
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { ImageSplit } from "@/components/ui/image-split";
+```
+
+```tsx showLineNumbers
+<ImageSplit
+  src="/images/components/image-split/badtz-ui-documentation-dark.webp"
+  sections={9}
+/>
+```
+
+## Props
+
+`ImageSplit` props.
+
+<TypeTable
+  type={{
+    src: {
+      type: "string",
+      description: "The URL of the image to be split."
+    },
+    sections: {
+      type: "number",
+      description: "The number of sections the image is divided into.",
+      default: "9"
+    },
+    offsetStep: {
+      type: "number",
+      description: "The step value for vertical offset applied to each image section.",
+      default: "30"
+    },
+    initialBorderOpacity: {
+      type: "number",
+      description: "The initial opacity of the borders between image sections.",
+      default: "0.4"
+    },
+    enableBorder: {
+      type: "boolean",
+      description: "Whether to display borders between image sections.",
+      default: "true"
+    },
+    borderColor: {
+      type: "string",
+      description: "The color of the borders between sections in hex format.",
+      default: '"#ffffff"'
+    },
+    viewportThreshold: {
+      type: "number",
+      description: "The percentage of the viewport height at which the animation starts.",
+      default: "0.3"
+    },
+    className: {
+      type: "string",
+      description: "Additional CSS classes for styling the container."
+    },
+    "[key: string]": {
+      type: "any",
+      description: "Any additional props passed to the parent `<div>`."
+    }
+  }}
+/>
+
+
+## Credits
+
+This component is inspired by [Reflect](https://reflect.app/).

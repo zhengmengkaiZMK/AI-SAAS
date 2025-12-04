@@ -1,0 +1,176 @@
+---
+title: Infinite Ribbon
+description: A dynamic and customizable sliding ribbon component that enhances UI experiences with smooth scrolling animations.
+component: true
+---
+
+<ComponentPreview
+  name="infinite-ribbon-demo"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="A dynamic and customizable sliding ribbon component that enhances UI experiences with smooth scrolling animations."
+  align="center"
+/>
+
+## Installation
+
+<CodeTabs>
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add https://badtz-ui.com/r/infinite-ribbon.json
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install clsx tailwind-merge
+```
+
+<Step>Add the `utils` file to the `@/lib` folder</Step>
+  ```tsx showLineNumbers
+  import { ClassValue, clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
+  export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+  }
+  ```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+<ComponentSource name="infinite-ribbon" title="components/ui/infinite-ribbon.tsx" />
+
+<Step>Tailwind v4: Update `@/global.css`</Step>
+
+```css showLineNumbers
+@theme inline {
+  --animate-infinite-ribbon: infinite-ribbon var(--ribbon-duration) linear
+    infinite;
+  --animate-infinite-ribbon-reverse: infinite-ribbon-reverse
+    var(--ribbon-duration) linear infinite;
+}
+
+@keyframes infinite-ribbon {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes infinite-ribbon-reverse {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+```
+
+<Step>Tailwind v3: Update `tailwind.config.js`</Step>
+
+```js showLineNumbers
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  theme: {
+    extend: {
+      keyframes: {
+        "infinite-ribbon": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-100%)" },
+        },
+        "infinite-ribbon-reverse": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(0)" },
+        },
+      },
+      animation: {
+        "infinite-ribbon": "infinite-ribbon var(--ribbon-duration) linear infinite",
+        "infinite-ribbon-reverse": "infinite-ribbon-reverse var(--ribbon-duration) linear infinite",
+      },
+    },
+  },
+};
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</CodeTabs>
+
+## Examples
+
+<ComponentPreview
+  name="infinite-ribbon-demo-2"
+  className="[&_.preview>[data-orientation=vertical]]:sm:max-w-[80%] **:[.preview]:min-h-[400px]"
+  description="A dynamic and customizable sliding ribbon component that enhances UI experiences with smooth scrolling animations."
+  align="center"
+/>
+
+
+## Usage
+
+```tsx showLineNumbers
+import { InfiniteRibbon } from "@/components/ui/infinite-ribbon";
+```
+
+```tsx showLineNumbers
+<InfiniteRibbon>
+  Build fast, responsive, and beautiful interfaces with ready-to-use components.
+  Designed for developers who demand the best.
+</InfiniteRibbon>
+```
+
+## Props
+
+`infinite-ribbon` props.
+
+<TypeTable
+  type={{
+    repeat: {
+      type: "number",
+      description: "Number of times the content is repeated in the ribbon.",
+      default: "5"
+    },
+    duration: {
+      type: "number",
+      description: "Duration of the animation in seconds.",
+      default: "10"
+    },
+    reverse: {
+      type: "boolean",
+      description: "Whether the ribbon animation should play in reverse.",
+      default: "false"
+    },
+    rotation: {
+      type: "number",
+      description: "Rotation angle of the ribbon in degrees.",
+      default: "0"
+    },
+    children: {
+      type: "React.ReactNode",
+      description: "The content inside the ribbon."
+    },
+    className: {
+      type: "string",
+      description: "Additional custom classes for styling the ribbon."
+    }
+  }}
+/>

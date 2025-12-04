@@ -2,23 +2,31 @@
 import { DesktopNavbar } from "./desktop-navbar";
 import { MobileNavbar } from "./mobile-navbar";
 import { motion } from "framer-motion";
-
-const navItems = [
-  {
-    title: "Pricing",
-    link: "/pricing",
-  },
-  {
-    title: "Blog",
-    link: "/blog",
-  },
-  {
-    title: "Contact",
-    link: "/contact",
-  },
-];
+import { usePathname } from "next/navigation";
 
 export function NavBar() {
+  const pathname = usePathname();
+  const isZh = pathname.startsWith("/zh");
+
+  const navItems = [
+    {
+      title: isZh ? "价格" : "Pricing",
+      link: isZh ? "/zh/pricing" : "/pricing",
+    },
+    {
+      title: isZh ? "博客" : "Blog",
+      link: isZh ? "/zh/blog" : "/blog",
+    },
+    {
+      title: isZh ? "文档" : "Docs",
+      link: isZh ? "/zh/docs" : "/docs",
+    },
+    {
+      title: isZh ? "联系我们" : "Contact",
+      link: isZh ? "/zh/contact" : "/contact",
+    },
+  ];
+
   return (
     <motion.nav
       initial={{
@@ -41,13 +49,4 @@ export function NavBar() {
       </div>
     </motion.nav>
   );
-}
-
-{
-  /* <div className="hidden md:block ">
-        <DesktopNavbar />
-      </div>
-      <div className="flex h-full w-full items-center md:hidden ">
-        <MobileNavbar navItems={navItems} />
-      </div> */
 }
