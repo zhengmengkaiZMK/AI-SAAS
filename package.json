@@ -37,8 +37,8 @@
     "next-themes": "^0.3.0",
     "next-view-transitions": "^0.2.0",
     "prismjs": "^1.29.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.0.1",
+    "react-dom": "19.0.1",
     "react-hook-form": "^7.51.5",
     "react-icons": "^5.2.1",
     "react-wrap-balancer": "^1.1.1",
@@ -52,17 +52,17 @@
   },
   "overrides": {
     "lucide-react": {
-      "react": "^19.0.0",
-      "react-dom": "^19.0.0"
+      "react": "19.0.1",
+      "react-dom": "19.0.1"
     },
     "next-themes": {
-      "react": "^19.0.0",
-      "react-dom": "^19.0.0"
+      "react": "19.0.1",
+      "react-dom": "19.0.1"
     },
     "next-view-transitions": {
-      "react": "^19.0.0",
-      "react-dom": "^19.0.0",
-      "next": "^15.1.0"
+      "react": "19.0.1",
+      "react-dom": "19.0.1",
+      "next": "15.5.7"
     }
   },
   "devDependencies": {
