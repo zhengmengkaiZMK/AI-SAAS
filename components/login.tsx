@@ -19,6 +19,7 @@ import { IconBrandGithub } from "@tabler/icons-react";
 import Password from "./password";
 import { Button } from "./button";
 import { Logo } from "./Logo";
+import { GoogleSignInButton } from "./google-signin-button";
 
 const formSchema = z.object({
   email: z
@@ -167,13 +168,20 @@ export function LoginForm() {
                 </div>
               </div>
 
-              <div className="mt-6 w-full flex items-center justify-center">
+              <div className="mt-6 w-full flex flex-col gap-3">
                 <Button onClick={() => {}} className="w-full py-1.5">
                   <IconBrandGithub className="h-5 w-5" />
                   <span className="text-sm font-semibold leading-6">
                     Github
                   </span>
                 </Button>
+                
+                <GoogleSignInButton 
+                  onClick={() => {
+                    console.log("Google Sign-In initiated");
+                    // 这里会触发 OAuth 流程
+                  }}
+                />
               </div>
 
               <p className="text-neutral-600 dark:text-neutral-400 text-sm text-center mt-8">

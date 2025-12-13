@@ -6,9 +6,9 @@ import { HorizontalGradient } from "@/components/horizontal-gradient";
 import { ContactForm } from "@/components/contact";
 
 export const metadata: Metadata = {
-  title: "联系我们 - Everything AI",
+  title: "联系我们 - SaltMine",
   description:
-    "Everything AI 是一个提供各种 AI 工具和服务的平台，帮助您掌握业务动态。生成图像、文本以及启动业务所需的一切。",
+    "SaltMine 是一个提供各种 AI 工具和服务的平台，帮助您掌握业务动态。生成图像、文本以及启动业务所需的一切。",
   openGraph: {
     images: ["https://ai-saas-template-aceternity.vercel.app/banner.png"],
   },
@@ -28,14 +28,14 @@ export default function ZhContactPage() {
                 "font-semibold text-xl text-center dark:text-muted-dark text-muted"
               )}
             >
-              Every AI 已被数千用户使用
+              SaltMine 已被数千用户使用
             </p>
             <p
               className={cn(
                 "font-normal text-base text-center text-neutral-500 dark:text-neutral-200 mt-8"
               )}
             >
-              在众多 AI 应用中，Everything AI 凭借其最先进的功能脱颖而出。
+              在众多 AI 应用中，SaltMine 凭借其最先进的功能脱颖而出。
             </p>
           </div>
           <HorizontalGradient className="top-20" />
