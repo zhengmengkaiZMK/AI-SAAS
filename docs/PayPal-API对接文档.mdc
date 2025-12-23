@@ -1,0 +1,981 @@
+# PayPal支付API对接文档
+
+## 文档概述
+
+本文档详细说明如何在Next.js应用中集成PayPal支付功能，实现会员订阅购买。
+
+**官方文档**: https://developer.paypal.com/docs/api/overview/  
+**SDK文档**: https://developer.paypal.com/sdk/js/  
+**API版本**: PayPal REST API v2
+
+---
+
+## 一、前置准备
+
+### 1.1 注册PayPal开发者账号
+
+1. 访问 https://developer.paypal.com/
+2. 使用PayPal账号登录或注册
+3. 进入Dashboard
+
+### 1.2 创建PayPal应用
+
+1. 在Dashboard中点击 "My Apps & Credentials"
+2. 选择 "Sandbox" 标签（开发环境）
+3. 点击 "Create App"
+4. 填写应用名称（如：AI-SaaS-Payment）
+5. 创建后记录：
+   - **Client ID**: 用于前端集成
+   - **Secret**: 用于后端API调用
+
+### 1.3 沙盒账号
+
+PayPal会自动创建测试账号：
+- **Business Account** (商家账号): 接收付款
+- **Personal Account** (个人账号): 用于测试支付
+
+查看测试账号：Dashboard → Testing Tools → Sandbox Accounts
+
+---
+
+## 二、安装依赖
+
+### 2.1 前端依赖
+
+```bash
+npm install @paypal/react-paypal-js
+```
+
+### 2.2 后端依赖
+
+```bash
+npm install @paypal/checkout-server-sdk
+```
+
+### 2.3 环境变量配置
+
+`.env.local`:
+
+```env
+# PayPal配置
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=your_sandbox_client_id
+PAYPAL_CLIENT_SECRET=your_sandbox_client_secret
+PAYPAL_MODE=sandbox  # 生产环境改为 live
+
+# 应用配置
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+**⚠️ 安全提示**: 
+- `NEXT_PUBLIC_` 前缀的变量会暴露到浏览器
+- Client Secret绝不能暴露到前端
+
+---
+
+## 三、PayPal客户端配置
+
+### 3.1 创建PayPal客户端
+
+`lib/paypal-client.ts`:
+
+```typescript
+import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
+
+/**
+ * 返回PayPal环境配置
+ */
+function environment() {
+  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET!;
+  const mode = process.env.PAYPAL_MODE || 'sandbox';
+
+  if (mode === 'live') {
+    return new checkoutNodeJssdk.core.LiveEnvironment(clientId, clientSecret);
+  } else {
+    return new checkoutNodeJssdk.core.SandboxEnvironment(clientId, clientSecret);
+  }
+}
+
+/**
+ * 返回PayPal HTTP客户端实例
+ */
+export function client() {
+  return new checkoutNodeJssdk.core.PayPalHttpClient(environment());
+}
+
+/**
+ * PayPal订单相关常量
+ */
+export const PAYPAL_CURRENCY = 'USD';
+
+export const MEMBERSHIP_PLANS = {
+  monthly: {
+    id: 'monthly',
+    name: 'Monthly Premium',
+    price: 9.99,
+    duration: 30, // 天数
+  },
+  yearly: {
+    id: 'yearly',
+    name: 'Yearly Premium',
+    price: 99.99,
+    duration: 365, // 天数
+  },
+} as const;
+
+export type MembershipPlanId = keyof typeof MEMBERSHIP_PLANS;
+```
+
+---
+
+## 四、后端API实现
+
+### 4.1 创建订单API
+
+`app/api/payment/create-order/route.ts`:
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
+import { client, PAYPAL_CURRENCY, MEMBERSHIP_PLANS, MembershipPlanId } from '@/lib/paypal-client';
+import { verifyAuth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+
+export async function POST(req: NextRequest) {
+  try {
+    // 1. 验证用户认证
+    const user = await verifyAuth(req);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // 2. 获取请求参数
+    const body = await req.json();
+    const { planId } = body as { planId: MembershipPlanId };
+
+    if (!planId || !MEMBERSHIP_PLANS[planId]) {
+      return NextResponse.json(
+        { error: 'Invalid plan ID' },
+        { status: 400 }
+      );
+    }
+
+    const plan = MEMBERSHIP_PLANS[planId];
+
+    // 3. 检查是否有待支付订单
+    const pendingOrder = await prisma.payment.findFirst({
+      where: {
+        userId: user.id,
+        status: 'pending',
+      },
+    });
+
+    if (pendingOrder) {
+      return NextResponse.json(
+        { error: 'You have a pending order. Please complete or cancel it first.' },
+        { status: 400 }
+      );
+    }
+
+    // 4. 创建PayPal订单
+    const request = new checkoutNodeJssdk.orders.OrdersCreateRequest();
+    request.prefer('return=representation');
+    request.requestBody({
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          description: plan.name,
+          amount: {
+            currency_code: PAYPAL_CURRENCY,
+            value: plan.price.toFixed(2),
+          },
+          custom_id: user.id, // 用于webhook识别用户
+        },
+      ],
+      application_context: {
+        brand_name: 'AI-SaaS',
+        landing_page: 'NO_PREFERENCE',
+        user_action: 'PAY_NOW',
+        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment/cancel`,
+      },
+    });
+
+    // 5. 调用PayPal API创建订单
+    const paypalClient = client();
+    const order = await paypalClient.execute(request);
+
+    // 6. 保存订单到数据库
+    await prisma.payment.create({
+      data: {
+        userId: user.id,
+        paypalOrderId: order.result.id,
+        amount: plan.price,
+        currency: PAYPAL_CURRENCY,
+        planId: planId,
+        status: 'pending',
+      },
+    });
+
+    // 7. 返回订单ID
+    return NextResponse.json({
+      success: true,
+      orderId: order.result.id,
+    });
+
+  } catch (error) {
+    console.error('Create order error:', error);
+    return NextResponse.json(
+      { error: 'Failed to create order' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 4.2 捕获订单API
+
+`app/api/payment/capture-order/route.ts`:
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
+import { client, MEMBERSHIP_PLANS } from '@/lib/paypal-client';
+import { verifyAuth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+
+export async function POST(req: NextRequest) {
+  try {
+    // 1. 验证用户认证
+    const user = await verifyAuth(req);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // 2. 获取订单ID
+    const body = await req.json();
+    const { orderId } = body;
+
+    if (!orderId) {
+      return NextResponse.json(
+        { error: 'Order ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // 3. 查询数据库中的订单
+    const payment = await prisma.payment.findFirst({
+      where: {
+        paypalOrderId: orderId,
+        userId: user.id,
+        status: 'pending',
+      },
+    });
+
+    if (!payment) {
+      return NextResponse.json(
+        { error: 'Order not found or already processed' },
+        { status: 404 }
+      );
+    }
+
+    // 4. 捕获PayPal支付
+    const request = new checkoutNodeJssdk.orders.OrdersCaptureRequest(orderId);
+    request.requestBody({});
+
+    const paypalClient = client();
+    const capture = await paypalClient.execute(request);
+
+    // 5. 验证支付状态
+    if (capture.result.status !== 'COMPLETED') {
+      throw new Error('Payment not completed');
+    }
+
+    // 6. 验证支付金额
+    const capturedAmount = parseFloat(
+      capture.result.purchase_units[0].payments.captures[0].amount.value
+    );
+    
+    if (Math.abs(capturedAmount - payment.amount) > 0.01) {
+      throw new Error('Payment amount mismatch');
+    }
+
+    // 7. 使用事务更新数据库
+    const plan = MEMBERSHIP_PLANS[payment.planId as keyof typeof MEMBERSHIP_PLANS];
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + plan.duration);
+
+    await prisma.$transaction([
+      // 更新订单状态
+      prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'completed',
+          paypalCaptureId: capture.result.id,
+          completedAt: new Date(),
+        },
+      }),
+      
+      // 更新用户会员状态
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          membershipType: 'premium',
+          membershipExpiresAt: expiresAt,
+        },
+      }),
+    ]);
+
+    // 8. 返回成功响应
+    return NextResponse.json({
+      success: true,
+      message: 'Payment completed successfully',
+      membershipExpiresAt: expiresAt,
+    });
+
+  } catch (error) {
+    console.error('Capture order error:', error);
+    
+    // 记录失败但不改变订单状态（可能需要人工介入）
+    return NextResponse.json(
+      { error: 'Failed to capture payment' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 4.3 获取订单详情API
+
+`app/api/payment/order/[orderId]/route.ts`:
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import checkoutNodeJssdk from '@paypal/checkout-server-sdk';
+import { client } from '@/lib/paypal-client';
+import { verifyAuth } from '@/lib/auth';
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { orderId: string } }
+) {
+  try {
+    const user = await verifyAuth(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { orderId } = params;
+
+    const request = new checkoutNodeJssdk.orders.OrdersGetRequest(orderId);
+    const paypalClient = client();
+    const order = await paypalClient.execute(request);
+
+    return NextResponse.json({
+      success: true,
+      order: order.result,
+    });
+
+  } catch (error) {
+    console.error('Get order error:', error);
+    return NextResponse.json(
+      { error: 'Failed to get order details' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 4.4 获取用户订单列表API
+
+`app/api/payment/orders/route.ts`:
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await verifyAuth(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const orders = await prisma.payment.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        paypalOrderId: true,
+        amount: true,
+        currency: true,
+        planId: true,
+        status: true,
+        createdAt: true,
+        completedAt: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      orders,
+    });
+
+  } catch (error) {
+    console.error('Get orders error:', error);
+    return NextResponse.json(
+      { error: 'Failed to get orders' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## 五、Webhook处理
+
+### 5.1 配置Webhook
+
+1. 进入PayPal Developer Dashboard
+2. 选择你的应用
+3. 点击 "Add Webhook"
+4. Webhook URL: `https://yourdomain.com/api/payment/webhook`
+5. 选择事件类型：
+   - `PAYMENT.CAPTURE.COMPLETED`
+   - `PAYMENT.CAPTURE.DENIED`
+   - `PAYMENT.CAPTURE.REFUNDED`
+
+### 5.2 Webhook验证和处理
+
+`app/api/payment/webhook/route.ts`:
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { prisma } from '@/lib/db';
+import { MEMBERSHIP_PLANS } from '@/lib/paypal-client';
+
+/**
+ * 验证PayPal Webhook签名
+ */
+function verifyWebhookSignature(
+  webhookId: string,
+  headers: Headers,
+  body: string
+): boolean {
+  const transmissionId = headers.get('paypal-transmission-id');
+  const transmissionTime = headers.get('paypal-transmission-time');
+  const certUrl = headers.get('paypal-cert-url');
+  const authAlgo = headers.get('paypal-auth-algo');
+  const transmissionSig = headers.get('paypal-transmission-sig');
+
+  if (!transmissionId || !transmissionTime || !certUrl || !authAlgo || !transmissionSig) {
+    return false;
+  }
+
+  // 构建验证字符串
+  const expectedSig = `${transmissionId}|${transmissionTime}|${webhookId}|${crypto
+    .createHash('sha256')
+    .update(body)
+    .digest('hex')}`;
+
+  // 实际生产环境需要下载并验证证书
+  // 这里简化处理，建议使用PayPal SDK的验证方法
+  
+  return true; // 简化示例
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.text();
+    const event = JSON.parse(body);
+
+    // 1. 验证Webhook签名
+    const webhookId = process.env.PAYPAL_WEBHOOK_ID!;
+    const isValid = verifyWebhookSignature(
+      webhookId,
+      req.headers,
+      body
+    );
+
+    if (!isValid) {
+      console.error('Invalid webhook signature');
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 401 }
+      );
+    }
+
+    // 2. 处理不同事件类型
+    const eventType = event.event_type;
+
+    switch (eventType) {
+      case 'PAYMENT.CAPTURE.COMPLETED':
+        await handlePaymentCompleted(event);
+        break;
+
+      case 'PAYMENT.CAPTURE.DENIED':
+        await handlePaymentDenied(event);
+        break;
+
+      case 'PAYMENT.CAPTURE.REFUNDED':
+        await handlePaymentRefunded(event);
+        break;
+
+      default:
+        console.log(`Unhandled event type: ${eventType}`);
+    }
+
+    // 3. 返回200确认接收
+    return NextResponse.json({ received: true });
+
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return NextResponse.json(
+      { error: 'Webhook processing failed' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * 处理支付完成事件
+ */
+async function handlePaymentCompleted(event: any) {
+  const orderId = event.resource.supplementary_data.related_ids.order_id;
+  const customId = event.resource.custom_id; // userId
+  const amount = parseFloat(event.resource.amount.value);
+
+  console.log(`Payment completed: Order ${orderId}, User ${customId}, Amount ${amount}`);
+
+  // 查找订单
+  const payment = await prisma.payment.findFirst({
+    where: {
+      paypalOrderId: orderId,
+      status: { in: ['pending', 'processing'] },
+    },
+  });
+
+  if (!payment) {
+    console.error(`Order not found: ${orderId}`);
+    return;
+  }
+
+  // 验证金额
+  if (Math.abs(amount - payment.amount) > 0.01) {
+    console.error(`Amount mismatch: expected ${payment.amount}, got ${amount}`);
+    return;
+  }
+
+  // 更新订单和用户状态
+  const plan = MEMBERSHIP_PLANS[payment.planId as keyof typeof MEMBERSHIP_PLANS];
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + plan.duration);
+
+  await prisma.$transaction([
+    prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        status: 'completed',
+        paypalCaptureId: event.resource.id,
+        completedAt: new Date(),
+      },
+    }),
+    prisma.user.update({
+      where: { id: payment.userId },
+      data: {
+        membershipType: 'premium',
+        membershipExpiresAt: expiresAt,
+      },
+    }),
+  ]);
+
+  console.log(`Membership activated for user ${payment.userId}`);
+}
+
+/**
+ * 处理支付拒绝事件
+ */
+async function handlePaymentDenied(event: any) {
+  const orderId = event.resource.supplementary_data.related_ids.order_id;
+  
+  await prisma.payment.updateMany({
+    where: { paypalOrderId: orderId },
+    data: { status: 'failed' },
+  });
+
+  console.log(`Payment denied: Order ${orderId}`);
+}
+
+/**
+ * 处理退款事件
+ */
+async function handlePaymentRefunded(event: any) {
+  const captureId = event.resource.id;
+  
+  // 查找订单
+  const payment = await prisma.payment.findFirst({
+    where: { paypalCaptureId: captureId },
+  });
+
+  if (!payment) {
+    console.error(`Payment not found for capture ${captureId}`);
+    return;
+  }
+
+  // 更新订单状态并取消会员
+  await prisma.$transaction([
+    prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'refunded' },
+    }),
+    prisma.user.update({
+      where: { id: payment.userId },
+      data: {
+        membershipType: 'free',
+        membershipExpiresAt: null,
+      },
+    }),
+  ]);
+
+  console.log(`Refund processed for user ${payment.userId}`);
+}
+```
+
+---
+
+## 六、前端集成
+
+### 6.1 PayPal Provider配置
+
+`app/layout.tsx`:
+
+```typescript
+import { PayPalScriptProvider } from '@paypal/react-paypal-js';
+
+const paypalOptions = {
+  'client-id': process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID!,
+  currency: 'USD',
+  intent: 'capture',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <PayPalScriptProvider options={paypalOptions}>
+          {children}
+        </PayPalScriptProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+### 6.2 支付按钮组件
+
+`components/paypal-button.tsx`:
+
+```typescript
+'use client';
+
+import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface PayPalButtonProps {
+  planId: 'monthly' | 'yearly';
+  onSuccess?: () => void;
+  onError?: (error: string) => void;
+}
+
+export function PayPalButton({ planId, onSuccess, onError }: PayPalButtonProps) {
+  const [{ isPending }] = usePayPalScriptReducer();
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const createOrder = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create order');
+      }
+
+      return data.orderId;
+
+    } catch (error) {
+      console.error('Create order error:', error);
+      onError?.(error instanceof Error ? error.message : 'Failed to create order');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onApprove = async (data: any) => {
+    try {
+      setLoading(true);
+
+      const response = await fetch('/api/payment/capture-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: data.orderID }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Payment failed');
+      }
+
+      // 支付成功
+      onSuccess?.();
+      router.push('/dashboard/profile?payment=success');
+
+    } catch (error) {
+      console.error('Capture order error:', error);
+      onError?.(error instanceof Error ? error.message : 'Payment processing failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onErrorHandler = (err: any) => {
+    console.error('PayPal error:', err);
+    onError?.('Payment failed. Please try again.');
+  };
+
+  if (isPending || loading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+
+  return (
+    <PayPalButtons
+      createOrder={createOrder}
+      onApprove={onApprove}
+      onError={onErrorHandler}
+      style={{
+        layout: 'vertical',
+        color: 'gold',
+        shape: 'rect',
+        label: 'paypal',
+      }}
+    />
+  );
+}
+```
+
+### 6.3 支付页面
+
+`app/(dashboard)/payment/page.tsx`:
+
+```typescript
+'use client';
+
+import { PayPalButton } from '@/components/paypal-button';
+import { MEMBERSHIP_PLANS } from '@/lib/paypal-client';
+import { useState } from 'react';
+
+export default function PaymentPage() {
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly');
+  const [error, setError] = useState('');
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Upgrade to Premium</h1>
+
+      {/* 选择套餐 */}
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
+        {Object.entries(MEMBERSHIP_PLANS).map(([key, plan]) => (
+          <div
+            key={key}
+            className={`border rounded-lg p-6 cursor-pointer transition ${
+              selectedPlan === key
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-blue-300'
+            }`}
+            onClick={() => setSelectedPlan(key as 'monthly' | 'yearly')}
+          >
+            <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+            <p className="text-3xl font-bold mb-4">
+              ${plan.price}
+              <span className="text-sm text-gray-600">
+                /{key === 'monthly' ? 'month' : 'year'}
+              </span>
+            </p>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li>✓ Unlimited searches</li>
+              <li>✓ Priority support</li>
+              <li>✓ Advanced features</li>
+              {key === 'yearly' && (
+                <li className="text-green-600 font-semibold">
+                  ✓ Save ${(9.99 * 12 - 99.99).toFixed(2)} per year
+                </li>
+              )}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {/* PayPal按钮 */}
+      <div className="max-w-md mx-auto">
+        {error && (
+          <div className="bg-red-50 text-red-600 p-4 rounded mb-4">
+            {error}
+          </div>
+        )}
+        
+        <PayPalButton
+          planId={selectedPlan}
+          onSuccess={() => {
+            console.log('Payment successful!');
+          }}
+          onError={(err) => {
+            setError(err);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## 七、测试
+
+### 7.1 沙盒测试
+
+1. 使用PayPal提供的测试账号登录
+2. 测试卡信息（在沙盒环境可用）：
+   - **信用卡**: 任意16位数字
+   - **过期日期**: 未来任意日期
+   - **CVV**: 任意3位数字
+
+### 7.2 测试场景
+
+#### 成功支付流程
+```typescript
+// 测试步骤：
+1. 点击支付按钮
+2. 登录PayPal沙盒账号
+3. 确认支付
+4. 验证订单状态更新为completed
+5. 验证用户会员状态激活
+```
+
+#### 支付取消
+```typescript
+// 测试步骤：
+1. 点击支付按钮
+2. 登录PayPal
+3. 点击取消
+4. 验证返回取消页面
+5. 验证订单状态仍为pending
+```
+
+#### 支付失败
+```typescript
+// 测试步骤：
+1. 使用余额不足的测试账号
+2. 尝试支付
+3. 验证错误提示
+4. 验证订单状态更新为failed
+```
+
+### 7.3 Webhook测试
+
+使用PayPal Webhook Simulator：
+1. 进入Dashboard → Webhooks
+2. 选择你的Webhook
+3. 点击 "Webhook simulator"
+4. 选择事件类型并发送测试事件
+
+---
+
+## 八、生产环境部署
+
+### 8.1 切换到Live模式
+
+1. 在PayPal Developer Dashboard创建Live应用
+2. 获取Live环境的Client ID和Secret
+3. 更新环境变量：
+   ```env
+   PAYPAL_MODE=live
+   NEXT_PUBLIC_PAYPAL_CLIENT_ID=live_client_id
+   PAYPAL_CLIENT_SECRET=live_client_secret
+   ```
+
+### 8.2 配置Live Webhook
+
+1. 使用生产域名配置Webhook URL
+2. 确保使用HTTPS
+3. 测试Webhook接收
+
+### 8.3 安全检查清单
+
+- [ ] Client Secret未暴露到前端
+- [ ] Webhook签名验证已实现
+- [ ] 订单金额验证已实现
+- [ ] 重复支付检查已实现
+- [ ] 数据库事务处理正确
+- [ ] 错误日志记录完整
+- [ ] HTTPS已启用
+- [ ] CORS配置正确
+
+---
+
+## 九、常见问题
+
+### Q1: CORS错误
+**原因**: PayPal SDK无法加载  
+**解决**: 检查Content-Security-Policy头，允许PayPal域名
+
+### Q2: 订单创建失败
+**原因**: 金额格式错误或缺少必要参数  
+**解决**: 确保金额为字符串格式，保留2位小数
+
+### Q3: Webhook未触发
+**原因**: URL不可访问或返回非200状态码  
+**解决**: 确保Webhook URL公网可访问，返回200状态
+
+### Q4: 支付完成但状态未更新
+**原因**: Webhook处理失败或数据库事务回滚  
+**解决**: 检查Webhook日志，确保事务处理正确
+
+---
+
+## 十、相关资源
+
+- **PayPal开发者文档**: https://developer.paypal.com/docs/
+- **JavaScript SDK参考**: https://developer.paypal.com/sdk/js/reference/
+- **REST API参考**: https://developer.paypal.com/api/rest/
+- **Webhook事件参考**: https://developer.paypal.com/api/rest/webhooks/
+- **测试工具**: https://developer.paypal.com/developer/applications
+
+---
+
+**文档版本**: v1.0  
+**最后更新**: 2025-12-13  
+**维护者**: AI-SaaS开发团队

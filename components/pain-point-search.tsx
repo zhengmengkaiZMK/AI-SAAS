@@ -5,6 +5,28 @@ import { usePathname } from "next/navigation";
 import { Button } from "./button";
 import { PainPointResults } from "./pain-point-results";
 
+// 分析结果类型定义
+interface AnalysisResult {
+  summary: string;
+  frustrationScore: number;
+  insights: Array<{
+    title: string;
+    severity: string;
+    category: string;
+    description: string;
+    opportunity: string;
+    quote: string | null;
+  }>;
+}
+
+interface RedditPost {
+  title: string;
+  link: string;
+  snippet: string;
+  date?: string;
+  subreddit?: string;
+}
+
 // 镐头图标组件
 const PickaxeIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -31,6 +53,10 @@ export const PainPointSearch = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [redditPosts, setRedditPosts] = useState<RedditPost[]>([]);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [error, setError] = useState("");
   
   const resultsRef = useRef<HTMLDivElement>(null);
 
@@ -119,37 +145,139 @@ export const PainPointSearch = () => {
     );
   };
 
-  const handleSearch = () => {
-    if (isSearching) return;
+  const handleSearch = async () => {
+    if (isSearching || !searchQuery.trim()) return;
     
     console.log("Search:", searchQuery, "Platforms:", selectedPlatforms);
     
-    // 开始搜索动画
+    // 重置状态
     setIsSearching(true);
     setProgress(0);
     setShowResults(false);
+    setAnalysisResult(null);
+    setRedditPosts([]);
+    setError("");
+    setStatusMessage(isZh ? "正在搜索..." : "Searching...");
     
-    // 模拟进度增长
-    const duration = 3000; // 3秒完成
-    const interval = 50; // 每50ms更新一次
-    const steps = duration / interval;
-    const increment = 100 / steps;
-    
-    let currentProgress = 0;
-    const progressInterval = setInterval(() => {
-      currentProgress += increment;
-      if (currentProgress >= 100) {
-        currentProgress = 100;
-        clearInterval(progressInterval);
-        // 完成后延迟0.5秒再隐藏进度条并显示结果
-        setTimeout(() => {
-          setIsSearching(false);
-          setProgress(0);
-          setShowResults(true);
-        }, 500);
+    try {
+      // 调用痛点分析API
+      const response = await fetch('/api/pain-points/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: searchQuery.trim(),
+          platforms: selectedPlatforms,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start analysis');
       }
-      setProgress(currentProgress);
-    }, interval);
+
+      // 处理SSE流
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('Response body is null');
+      }
+
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('event:')) {
+            continue; // 跳过事件类型行
+          }
+
+          if (line.startsWith('data:')) {
+            const data = line.substring(5).trim();
+            
+            if (data === '[DONE]') {
+              console.log('Analysis stream completed');
+              continue;
+            }
+
+            try {
+              const event = JSON.parse(data);
+              console.log('Received event:', event);
+
+              // 处理不同类型的事件
+              if (event.status === 'searching') {
+                setProgress(event.progress || 10);
+                setStatusMessage(event.message || (isZh ? "正在搜索..." : "Searching..."));
+              } else if (event.status === 'analyzing') {
+                setProgress(event.progress || 40);
+                setStatusMessage(event.message || (isZh ? "AI 分析中..." : "Analyzing with AI..."));
+              } else if (event.status === 'completed') {
+                // 只在收到completed事件时才处理结果
+                setProgress(100);
+                setStatusMessage(isZh ? "分析完成！" : "Analysis complete!");
+
+                // 解析ADP返回的结果
+                try {
+                  // 尝试从result中提取JSON
+                  const jsonMatch = event.result.match(/```json\s*([\s\S]*?)\s*```/) || 
+                                   event.result.match(/\{[\s\S]*\}/);
+                  
+                  if (jsonMatch) {
+                    const jsonStr = jsonMatch[1] || jsonMatch[0];
+                    const analysisData = JSON.parse(jsonStr);
+                    
+                    console.log('Parsed analysis:', analysisData);
+                    setAnalysisResult(analysisData);
+                    
+                    // 保存Reddit帖子数据
+                    if (event.searchData?.posts) {
+                      setRedditPosts(event.searchData.posts);
+                    }
+                  } else {
+                    // 如果无法解析JSON，使用原始文本
+                    console.warn('Could not parse JSON from ADP response, using raw text');
+                    setAnalysisResult({
+                      summary: event.result,
+                      frustrationScore: 50,
+                      insights: [],
+                    });
+                  }
+                } catch (parseError) {
+                  console.error('Failed to parse ADP result:', parseError);
+                  setAnalysisResult({
+                    summary: event.result || (isZh ? "分析完成，但结果格式有误" : "Analysis completed but format is invalid"),
+                    frustrationScore: 50,
+                    insights: [],
+                  });
+                }
+
+                // 延迟后显示结果
+                setTimeout(() => {
+                  setIsSearching(false);
+                  setShowResults(true);
+                }, 500);
+              } else if (event.error) {
+                throw new Error(event.error.message || 'Analysis failed');
+              }
+
+            } catch (parseError) {
+              console.error('Failed to parse event:', parseError, data);
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Search error:', error);
+      setError(error instanceof Error ? error.message : (isZh ? "搜索失败" : "Search failed"));
+      setIsSearching(false);
+      setProgress(0);
+    }
   };
 
   return (
@@ -249,16 +377,26 @@ export const PainPointSearch = () => {
               />
             </div>
             <p className="text-xs text-center mt-2 text-neutral-500 dark:text-neutral-400">
-              {Math.round(progress)}%
+              {statusMessage} ({Math.round(progress)}%)
             </p>
+          </div>
+        )}
+
+        {/* 错误提示 */}
+        {error && (
+          <div className="mt-6 w-full max-w-md mx-auto bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+            {error}
           </div>
         )}
       </div>
 
       {/* 结果展示区 */}
-      {showResults && (
+      {showResults && analysisResult && (
         <div ref={resultsRef}>
-          <PainPointResults />
+          <PainPointResults 
+            data={analysisResult} 
+            redditPosts={redditPosts}
+          />
         </div>
       )}
     </>

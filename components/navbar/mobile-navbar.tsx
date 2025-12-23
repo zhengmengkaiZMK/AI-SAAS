@@ -10,6 +10,7 @@ import { useMotionValueEvent, useScroll } from "framer-motion";
 import { ModeSwitcher } from "../mode-switcher";
 import { LanguageSwitcher } from "../language-switcher";
 import { ActionButton } from "../action-button";
+import { UserNav } from "../user-nav";
 
 export const MobileNavbar = ({ navItems }: any) => {
   const [open, setOpen] = useState(false);
@@ -85,7 +86,7 @@ export const MobileNavbar = ({ navItems }: any) => {
             ))}
           </div>
           <div className="flex flex-row w-full items-start gap-2.5  px-8 py-4 ">
-            <ActionButton />
+            <UserNav />
           </div>
         </div>
       )}

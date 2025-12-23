@@ -1,0 +1,180 @@
+// Prisma Schema for AI-SaaS
+// Database: PostgreSQL (Supabase)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== 枚举类型 ====================
+enum MembershipType {
+  FREE
+  PREMIUM
+  ENTERPRISE
+}
+
+enum PaymentProvider {
+  PAYPAL
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+// ==================== 用户表 ====================
+model User {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email               String        @unique @db.VarChar(255)
+  emailVerified       DateTime?     @map("email_verified") @db.Timestamptz
+  passwordHash        String?       @map("password_hash") @db.VarChar(255)
+  name                String?       @db.VarChar(100)
+  avatar              String?       @db.Text
+  
+  // 会员信息
+  membershipType      MembershipType @default(FREE) @map("membership_type")
+  membershipExpiresAt DateTime?      @map("membership_expires_at") @db.Timestamptz
+  
+  // OAuth关联
+  provider            String?       @db.VarChar(50)
+  providerId          String?       @map("provider_id") @db.VarChar(255)
+  
+  // 账户状态
+  isActive            Boolean       @default(true) @map("is_active")
+  isBanned            Boolean       @default(false) @map("is_banned")
+  banReason           String?       @map("ban_reason") @db.Text
+  
+  // 时间戳
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  lastLoginAt         DateTime?     @map("last_login_at") @db.Timestamptz
+  
+  // 关联关系
+  quotas              UserQuota[]
+  payments            Payment[]
+  chatHistory         ChatHistory[]
+  searchHistory       SearchHistory[]
+  sessions            Session[]
+  
+  @@index([email])
+  @@index([membershipType], name: "idx_users_membership_type")
+  @@unique([provider, providerId], name: "unique_provider_id")
+  @@map("users")
+}
+
+// ==================== 会话表 ====================
+model Session {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionToken String   @unique @map("session_token") @db.VarChar(255)
+  userId       String   @map("user_id") @db.Uuid
+  expires      DateTime @db.Timestamptz
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId], name: "idx_sessions_user_id")
+  @@index([expires], name: "idx_sessions_expires")
+  @@map("sessions")
+}
+
+// ==================== 配额表 ====================
+model UserQuota {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  date          DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  
+  // Reddit搜索配额
+  searchesUsed  Int      @default(0) @map("searches_used")
+  searchesLimit Int      @default(3) @map("searches_limit")
+  
+  // ADP对话配额
+  messagesUsed  Int      @default(0) @map("messages_used")
+  messagesLimit Int      @default(10) @map("messages_limit")
+  
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date], name: "unique_user_date")
+  @@index([userId, date], name: "idx_user_quotas_user_date")
+  @@index([date], name: "idx_user_quotas_date")
+  @@map("user_quotas")
+}
+
+// ==================== 支付记录表 ====================
+model Payment {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String          @map("user_id") @db.Uuid
+  
+  // 支付平台信息
+  provider          PaymentProvider @default(PAYPAL)
+  providerOrderId   String          @unique @map("provider_order_id") @db.VarChar(255)
+  providerPaymentId String?         @unique @map("provider_payment_id") @db.VarChar(255)
+  
+  // 订单信息
+  amount            Decimal         @db.Decimal(10, 2)
+  currency          String          @default("USD") @db.VarChar(3)
+  planId            String          @map("plan_id") @db.VarChar(50)
+  
+  // 状态
+  status            PaymentStatus   @default(PENDING)
+  
+  // 元数据
+  metadata          Json?
+  
+  // 时间戳
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  completedAt       DateTime?       @map("completed_at") @db.Timestamptz
+  refundedAt        DateTime?       @map("refunded_at") @db.Timestamptz
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId], name: "idx_payments_user_id")
+  @@index([status], name: "idx_payments_status")
+  @@index([createdAt(sort: Desc)], name: "idx_payments_created_at")
+  @@index([providerOrderId], name: "idx_payments_provider_order_id")
+  @@map("payments")
+}
+
+// ==================== 搜索历史表 ====================
+model SearchHistory {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  query        String   @db.Text
+  source       String   @db.VarChar(50)
+  resultsCount Int      @default(0) @map("results_count")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, createdAt(sort: Desc)], name: "idx_search_history_user_created")
+  @@index([source], name: "idx_search_history_source")
+  @@map("search_history")
+}
+
+// ==================== 聊天历史表 ====================
+model ChatHistory {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  sessionId String   @map("session_id") @db.VarChar(255)
+  role      String   @db.VarChar(20)
+  content   String   @db.Text
+  tokens    Int?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, sessionId], name: "idx_chat_history_user_session")
+  @@index([sessionId, createdAt(sort: Asc)], name: "idx_chat_history_session_created")
+  @@index([createdAt(sort: Desc)], name: "idx_chat_history_created_at")
+  @@map("chat_history")
+}

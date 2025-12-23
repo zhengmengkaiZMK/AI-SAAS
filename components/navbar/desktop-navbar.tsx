@@ -12,6 +12,7 @@ import { useState } from "react";
 import { LanguageSwitcher } from "../language-switcher";
 import { ModeSwitcher } from "../mode-switcher";
 import { ActionButton } from "../action-button";
+import { UserNav } from "../user-nav";
 
 type Props = {
   navItems: {
@@ -69,7 +70,7 @@ export const DesktopNavbar = ({ navItems }: Props) => {
         <div className="h-5 w-px bg-neutral-200 dark:bg-neutral-700 mx-2" />
         <ModeSwitcher />
         <div className="h-5 w-px bg-neutral-200 dark:bg-neutral-700 mx-2" />
-        <ActionButton />
+        <UserNav />
       </div>
     </div>
   );

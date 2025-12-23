@@ -4,91 +4,41 @@ import { usePathname } from "next/navigation";
 import { IconCopy, IconFileTypePdf, IconExternalLink, IconFlame, IconDeviceMobile } from "@tabler/icons-react";
 import { Button } from "./button";
 
-// Mock 数据
-const mockResults = {
-  en: {
-    summary: "Users mainly complain about slow mobile performance and confusing navigation. The overall sentiment is Frustrated.",
-    frustrationScore: 78,
-    insights: [
-      {
-        title: "Mobile App is too slow",
-        severity: "High Severity",
-        category: "Performance",
-        description: "Users report that the mobile app takes 10+ seconds to load, causing them to abandon tasks frequently.",
-        opportunity: "Build a lightweight version with offline-first architecture to improve load times by 80%.",
-        quote: "I love the features but the app is unusable on my phone. Takes forever to load anything.",
-        quoteAuthor: "u/ProductHunter23",
-        quoteLink: "https://reddit.com/r/saas/comments/example1"
-      },
-      {
-        title: "Confusing navigation menu",
-        severity: "Medium Severity",
-        category: "UX/UI",
-        description: "New users struggle to find basic features because the navigation structure is too complex and inconsistent.",
-        opportunity: "Redesign the navigation with a simplified 3-tier structure and add onboarding tooltips.",
-        quote: "Took me 20 minutes to figure out where the export button was. Not intuitive at all.",
-        quoteAuthor: "u/DesignCritic",
-        quoteLink: "https://reddit.com/r/saas/comments/example2"
-      },
-      {
-        title: "No bulk editing feature",
-        severity: "High Severity",
-        category: "Feature Gap",
-        description: "Power users need to edit multiple items at once but currently have to do it one by one.",
-        opportunity: "Implement batch operations with multi-select functionality to save users 70% of their time.",
-        quote: "I have to edit 200+ entries manually. There's no bulk edit option which is insane in 2024.",
-        quoteAuthor: "u/ProductivityGuru",
-        quoteLink: "https://reddit.com/r/saas/comments/example3"
-      }
-    ]
-  },
-  zh: {
-    summary: "用户主要抱怨移动端性能缓慢和导航混乱。整体情绪为沮丧。",
-    frustrationScore: 78,
-    insights: [
-      {
-        title: "移动应用速度太慢",
-        severity: "高严重性",
-        category: "性能",
-        description: "用户反馈移动应用加载时间超过 10 秒，导致他们频繁放弃任务。",
-        opportunity: "构建轻量级离线优先架构版本，将加载时间提升 80%。",
-        quote: "我喜欢这些功能，但应用在手机上根本无法使用。加载任何内容都需要很长时间。",
-        quoteAuthor: "u/ProductHunter23",
-        quoteLink: "https://reddit.com/r/saas/comments/example1"
-      },
-      {
-        title: "导航菜单令人困惑",
-        severity: "中等严重性",
-        category: "用户体验/界面",
-        description: "新用户很难找到基本功能，因为导航结构过于复杂且不一致。",
-        opportunity: "重新设计导航，采用简化的三层结构并添加引导提示。",
-        quote: "花了 20 分钟才找到导出按钮在哪里。一点也不直观。",
-        quoteAuthor: "u/DesignCritic",
-        quoteLink: "https://reddit.com/r/saas/comments/example2"
-      },
-      {
-        title: "缺少批量编辑功能",
-        severity: "高严重性",
-        category: "功能缺口",
-        description: "高级用户需要一次编辑多个项目，但目前只能逐个编辑。",
-        opportunity: "实现批量操作和多选功能，为用户节省 70% 的时间。",
-        quote: "我必须手动编辑 200 多个条目。2024 年了竟然没有批量编辑选项，太疯狂了。",
-        quoteAuthor: "u/ProductivityGuru",
-        quoteLink: "https://reddit.com/r/saas/comments/example3"
-      }
-    ]
-  }
-};
+// 类型定义
+interface Insight {
+  title: string;
+  severity: string;
+  category: string;
+  description: string;
+  opportunity: string;
+  quote: string | null;
+  quoteAuthor?: string;
+  quoteLink?: string;
+}
+
+interface AnalysisData {
+  summary: string;
+  frustrationScore: number;
+  insights: Insight[];
+}
+
+interface RedditPost {
+  title: string;
+  link: string;
+  snippet: string;
+  date?: string;
+  subreddit?: string;
+}
 
 interface PainPointResultsProps {
+  data: AnalysisData;
+  redditPosts?: RedditPost[];
   onClose?: () => void;
 }
 
-export const PainPointResults = ({ onClose }: PainPointResultsProps) => {
+export const PainPointResults = ({ data, redditPosts = [], onClose }: PainPointResultsProps) => {
   const pathname = usePathname();
   const isZh = pathname.startsWith("/zh");
-  
-  const data = isZh ? mockResults.zh : mockResults.en;
   
   const content = {
     summaryTitle: isZh ? "执行摘要" : "Executive Summary",
@@ -107,18 +57,75 @@ export const PainPointResults = ({ onClose }: PainPointResultsProps) => {
     if (severity.includes("High") || severity.includes("高")) {
       return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
     }
-    return "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400";
+    if (severity.includes("Medium") || severity.includes("中")) {
+      return "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400";
+    }
+    return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400";
   };
 
   const handleCopyReport = () => {
-    console.log("Copy report");
-    // 实现复制功能
+    // 生成报告文本
+    const reportText = `
+# Pain Point Analysis Report
+
+## Executive Summary
+${data.summary}
+
+**Frustration Score**: ${data.frustrationScore}/100
+
+## Top Pain Points
+
+${data.insights.map((insight, index) => `
+### ${index + 1}. ${insight.title}
+- **Severity**: ${insight.severity}
+- **Category**: ${insight.category}
+- **Description**: ${insight.description}
+- **Opportunity**: ${insight.opportunity}
+${insight.quote ? `- **User Quote**: "${insight.quote}"` : ''}
+`).join('\n')}
+
+---
+Generated by AI Pain Point Analyzer
+    `.trim();
+
+    navigator.clipboard.writeText(reportText).then(() => {
+      alert(isZh ? '报告已复制到剪贴板！' : 'Report copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
   };
 
   const handleExportPdf = () => {
     console.log("Export PDF");
-    // 实现导出功能
+    alert(isZh ? 'PDF 导出功能即将推出' : 'PDF export feature coming soon');
   };
+
+  // 尝试从Reddit帖子中匹配quote和链接
+  const enrichInsights = () => {
+    return data.insights.map(insight => {
+      // 如果insight已经有链接，直接返回
+      if (insight.quoteLink) return insight;
+
+      // 尝试在Reddit帖子中找到匹配的quote
+      if (insight.quote && redditPosts.length > 0) {
+        const matchingPost = redditPosts.find(post => 
+          post.snippet.toLowerCase().includes(insight.quote!.toLowerCase().substring(0, 30))
+        );
+        
+        if (matchingPost) {
+          return {
+            ...insight,
+            quoteLink: matchingPost.link,
+            quoteAuthor: matchingPost.subreddit ? `r/${matchingPost.subreddit}` : 'Reddit User',
+          };
+        }
+      }
+
+      return insight;
+    });
+  };
+
+  const enrichedInsights = enrichInsights();
 
   return (
     <div className="w-full max-w-6xl mx-auto mt-12 px-4 pb-20 relative z-10">
@@ -180,7 +187,7 @@ export const PainPointResults = ({ onClose }: PainPointResultsProps) => {
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data.insights.map((insight, index) => (
+          {enrichedInsights.map((insight, index) => (
             <div
               key={index}
               className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col"
@@ -218,28 +225,32 @@ export const PainPointResults = ({ onClose }: PainPointResultsProps) => {
               </div>
               
               {/* 用户原声 */}
-              <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-2">
-                  {content.userQuoteLabel}
-                </p>
-                <blockquote className="text-sm italic text-neutral-600 dark:text-neutral-400 mb-2 pl-3 border-l-2 border-neutral-300 dark:border-neutral-600">
-                  "{insight.quote}"
-                </blockquote>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-neutral-500 dark:text-neutral-500">
-                    — {insight.quoteAuthor}
-                  </span>
-                  <a
-                    href={insight.quoteLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors"
-                  >
-                    {content.viewOnReddit}
-                    <IconExternalLink className="h-3 w-3" />
-                  </a>
+              {insight.quote && (
+                <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                  <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-2">
+                    {content.userQuoteLabel}
+                  </p>
+                  <blockquote className="text-sm italic text-neutral-600 dark:text-neutral-400 mb-2 pl-3 border-l-2 border-neutral-300 dark:border-neutral-600">
+                    "{insight.quote}"
+                  </blockquote>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-neutral-500 dark:text-neutral-500">
+                      {insight.quoteAuthor ? `— ${insight.quoteAuthor}` : '— Reddit User'}
+                    </span>
+                    {insight.quoteLink && (
+                      <a
+                        href={insight.quoteLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors"
+                      >
+                        {content.viewOnReddit}
+                        <IconExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>

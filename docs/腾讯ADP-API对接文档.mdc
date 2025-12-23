@@ -1,0 +1,976 @@
+# 腾讯ADP (智能体开发平台) API对接文档
+
+## 文档概述
+
+本文档详细说明如何在Next.js应用中集成腾讯云智能体开发平台（ADP）的对话接口，实现AI对话功能。
+
+**官方文档**: https://cloud.tencent.com/document/product/1759/105561  
+**控制台**: https://console.cloud.tencent.com/adp  
+**协议**: HTTP Server-Sent Events (SSE)
+
+---
+
+## 一、前置准备
+
+### 1.1 创建腾讯云账号
+
+1. 访问 https://cloud.tencent.com/
+2. 注册并完成实名认证
+3. 登录控制台
+
+### 1.2 创建ADP应用
+
+1. 进入 [智能体开发平台控制台](https://console.cloud.tencent.com/adp)
+2. 点击"创建应用"
+3. 配置应用：
+   - **应用名称**: AI-SaaS助手
+   - **应用描述**: AI对话助手
+   - **知识库**: （可选）上传知识库文档
+   - **模型配置**: 选择模型和参数
+4. 保存并发布应用
+
+### 1.3 获取AppKey
+
+1. 在应用列表找到刚创建的应用
+2. 点击"调用"按钮
+3. 在弹出窗口中复制 **AppKey**
+4. 妥善保管AppKey（类似密码）
+
+### 1.4 环境变量配置
+
+`.env.local`:
+
+```env
+# 腾讯ADP配置
+TENCENT_ADP_APP_KEY=your_app_key_here
+TENCENT_ADP_API_URL=https://wss.lke.cloud.tencent.com/v1/qbot/chat/sse
+
+# 可选：如果使用多个应用
+TENCENT_ADP_APP_KEY_SECONDARY=another_app_key
+```
+
+---
+
+## 二、API接口说明
+
+### 2.1 接口基本信息
+
+- **接口地址**: `https://wss.lke.cloud.tencent.com/v1/qbot/chat/sse`
+- **请求方法**: `POST`
+- **Content-Type**: `application/json`
+- **响应格式**: Server-Sent Events (SSE)
+
+### 2.2 请求参数
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| bot_app_key | string | 是 | 应用密钥，用于认证 |
+| session_id | string | 是 | 会话ID，建议使用UUID，长度2-64字符 |
+| visitor_biz_id | string | 是 | 访客ID，用于标识用户 |
+| content | string | 是 | 用户发送的消息内容 |
+| request_id | string | 否 | 请求ID，用于链路追踪 |
+| stream | string | 否 | 是否流式传输：`enable`/`disable`，默认为应用配置 |
+
+### 2.3 请求示例
+
+```bash
+curl --location 'https://wss.lke.cloud.tencent.com/v1/qbot/chat/sse' \
+--header 'Content-Type: application/json' \
+--data '{
+    "session_id": "a29bae68-cb1c-489d-8097-6be78f136acf",
+    "bot_app_key": "your_app_key",
+    "visitor_biz_id": "user_123",
+    "content": "你好，请介绍一下你自己",
+    "request_id": "req_123456",
+    "stream": "enable"
+}'
+```
+
+### 2.4 响应事件类型
+
+#### 2.4.1 reply 事件（模型回复）
+
+AI回复的主要内容，流式模式下会多次触发。
+
+```json
+{
+  "type": "reply",
+  "payload": {
+    "content": "我是腾讯云智能体...",
+    "record_id": "消息唯一ID",
+    "session_id": "会话ID",
+    "is_final": false,
+    "is_evil": false,
+    "thought_process": "思考过程（可选）",
+    "response_type": 1
+  },
+  "message_id": "事件消息ID"
+}
+```
+
+**关键字段**:
+- `content`: AI回复的文本内容
+- `is_final`: 是否为最后一次回复（true表示结束）
+- `record_id`: 消息记录ID，可用于反馈评价
+
+#### 2.4.2 token_stat 事件（Token统计）
+
+对话结束后返回Token消耗统计。
+
+```json
+{
+  "type": "token_stat",
+  "payload": {
+    "elapsed": 1616,
+    "token_count": 323,
+    "procedures": [
+      {
+        "title": "调用知识库",
+        "count": 323,
+        "status": "success"
+      }
+    ]
+  }
+}
+```
+
+#### 2.4.3 reference 事件（参考来源）
+
+当回答引用知识库或网络搜索时返回。
+
+```json
+{
+  "type": "reference",
+  "payload": {
+    "references": [
+      {
+        "type": 2,
+        "name": "文档名称",
+        "url": "https://example.com/doc"
+      }
+    ]
+  }
+}
+```
+
+**type类型**:
+- 1: 网络搜索
+- 2: 知识库文档
+
+#### 2.4.4 error 事件（错误信息）
+
+处理过程中发生错误时返回。
+
+```json
+{
+  "type": "error",
+  "error": {
+    "code": 460004,
+    "message": "应用不存在"
+  }
+}
+```
+
+**常见错误码**:
+- `460004`: 应用不存在
+- `460005`: AppKey无效
+- `460006`: 会话ID无效
+- `460007`: 内容为空
+- `460008`: 请求频率过高
+
+---
+
+## 三、后端实现
+
+### 3.1 ADP配置文件
+
+`lib/adp-config.ts`:
+
+```typescript
+export const ADP_CONFIG = {
+  apiUrl: process.env.TENCENT_ADP_API_URL!,
+  appKey: process.env.TENCENT_ADP_APP_KEY!,
+  timeout: 30000, // 30秒超时
+  maxRetries: 3,
+};
+
+export interface ADPChatRequest {
+  sessionId: string;
+  visitorBizId: string;
+  content: string;
+  requestId?: string;
+  stream?: 'enable' | 'disable';
+}
+
+export interface ADPChatResponse {
+  type: 'reply' | 'token_stat' | 'reference' | 'error';
+  payload?: any;
+  error?: {
+    code: number;
+    message: string;
+  };
+  message_id?: string;
+}
+```
+
+### 3.2 ADP Service实现
+
+`lib/services/adp.service.ts`:
+
+```typescript
+import { v4 as uuidv4 } from 'uuid';
+import { ADP_CONFIG, ADPChatRequest, ADPChatResponse } from '@/lib/adp-config';
+
+export class ADPService {
+  
+  /**
+   * 生成会话ID
+   */
+  static generateSessionId(): string {
+    return uuidv4();
+  }
+
+  /**
+   * 生成请求ID
+   */
+  static generateRequestId(): string {
+    return `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  }
+
+  /**
+   * 发送聊天请求（流式）
+   */
+  static async *streamChat(request: ADPChatRequest): AsyncGenerator<ADPChatResponse> {
+    const { sessionId, visitorBizId, content, requestId, stream = 'enable' } = request;
+
+    // 构建请求体
+    const body = {
+      bot_app_key: ADP_CONFIG.appKey,
+      session_id: sessionId,
+      visitor_biz_id: visitorBizId,
+      content,
+      request_id: requestId || this.generateRequestId(),
+      stream,
+    };
+
+    try {
+      // 发送POST请求
+      const response = await fetch(ADP_CONFIG.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`ADP API error: ${response.status} ${response.statusText}`);
+      }
+
+      // 处理SSE流
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('Response body is null');
+      }
+
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // 按行分割
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // 保留不完整的行
+
+        for (const line of lines) {
+          if (line.trim() === '') continue;
+
+          // 解析SSE事件
+          if (line.startsWith('event:')) {
+            // 事件类型行，暂存
+            continue;
+          }
+
+          if (line.startsWith('data:')) {
+            const data = line.substring(5).trim();
+            
+            if (data === '[DONE]') {
+              // 流结束标记
+              return;
+            }
+
+            try {
+              const event: ADPChatResponse = JSON.parse(data);
+              yield event;
+
+              // 如果遇到错误，停止
+              if (event.type === 'error') {
+                return;
+              }
+
+              // 如果是最终回复，可以选择继续接收统计信息
+              if (event.type === 'reply' && event.payload?.is_final) {
+                // 继续接收token_stat等其他事件
+              }
+
+            } catch (e) {
+              console.error('Failed to parse SSE data:', data, e);
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('ADP stream chat error:', error);
+      yield {
+        type: 'error',
+        error: {
+          code: -1,
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
+    }
+  }
+
+  /**
+   * 发送聊天请求（非流式）
+   */
+  static async chat(request: ADPChatRequest): Promise<string> {
+    const messages: string[] = [];
+
+    for await (const event of this.streamChat({ ...request, stream: 'disable' })) {
+      if (event.type === 'reply' && event.payload?.content) {
+        messages.push(event.payload.content);
+      } else if (event.type === 'error') {
+        throw new Error(event.error?.message || 'ADP API error');
+      }
+    }
+
+    return messages.join('');
+  }
+}
+```
+
+### 3.3 Next.js API Route（流式响应）
+
+`app/api/adp/chat/route.ts`:
+
+```typescript
+import { NextRequest } from 'next/server';
+import { ADPService } from '@/lib/services/adp.service';
+import { verifyAuth } from '@/lib/auth';
+import { checkQuota, decrementQuota } from '@/lib/services/quota.service';
+import { prisma } from '@/lib/db';
+
+export const runtime = 'edge'; // 使用Edge Runtime支持流式响应
+
+export async function POST(req: NextRequest) {
+  try {
+    // 1. 验证用户认证
+    const user = await verifyAuth(req);
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. 检查配额
+    const hasQuota = await checkQuota(user.id);
+    if (!hasQuota) {
+      return new Response(
+        JSON.stringify({ error: 'Daily quota exceeded. Please upgrade to premium.' }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 3. 获取请求参数
+    const body = await req.json();
+    const { content, sessionId } = body;
+
+    if (!content) {
+      return new Response(
+        JSON.stringify({ error: 'Content is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 4. 使用或生成会话ID
+    const chatSessionId = sessionId || ADPService.generateSessionId();
+
+    // 5. 创建SSE流
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // 发送流式响应
+          for await (const event of ADPService.streamChat({
+            sessionId: chatSessionId,
+            visitorBizId: user.id,
+            content,
+          })) {
+            // 格式化为SSE格式
+            const sseData = `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+            controller.enqueue(encoder.encode(sseData));
+
+            // 如果是最终回复，保存对话历史
+            if (event.type === 'reply' && event.payload?.is_final) {
+              saveMessage(user.id, chatSessionId, content, event.payload.content)
+                .catch(console.error);
+            }
+
+            // 遇到错误停止
+            if (event.type === 'error') {
+              break;
+            }
+          }
+
+          // 扣减配额
+          await decrementQuota(user.id);
+
+          // 发送结束标记
+          controller.enqueue(encoder.encode('event: done\ndata: [DONE]\n\n'));
+          controller.close();
+
+        } catch (error) {
+          console.error('Stream error:', error);
+          const errorEvent = {
+            type: 'error',
+            error: {
+              code: -1,
+              message: error instanceof Error ? error.message : 'Stream error',
+            },
+          };
+          controller.enqueue(
+            encoder.encode(`event: error\ndata: ${JSON.stringify(errorEvent)}\n\n`)
+          );
+          controller.close();
+        }
+      },
+    });
+
+    // 6. 返回SSE响应
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no', // 禁用Nginx缓冲
+      },
+    });
+
+  } catch (error) {
+    console.error('ADP chat error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+/**
+ * 保存对话消息到数据库
+ */
+async function saveMessage(
+  userId: string,
+  sessionId: string,
+  userMessage: string,
+  aiMessage: string
+) {
+  await prisma.$transaction([
+    prisma.chatHistory.create({
+      data: {
+        userId,
+        sessionId,
+        role: 'user',
+        content: userMessage,
+      },
+    }),
+    prisma.chatHistory.create({
+      data: {
+        userId,
+        sessionId,
+        role: 'assistant',
+        content: aiMessage,
+      },
+    }),
+  ]);
+}
+```
+
+### 3.4 获取对话历史API
+
+`app/api/adp/history/route.ts`:
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await verifyAuth(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get('sessionId');
+    const limit = parseInt(searchParams.get('limit') || '50');
+
+    const where: any = { userId: user.id };
+    if (sessionId) {
+      where.sessionId = sessionId;
+    }
+
+    const history = await prisma.chatHistory.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        sessionId: true,
+        role: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      history: history.reverse(), // 按时间正序
+    });
+
+  } catch (error) {
+    console.error('Get history error:', error);
+    return NextResponse.json(
+      { error: 'Failed to get chat history' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await verifyAuth(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get('sessionId');
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Session ID is required' },
+        { status: 400 }
+      );
+    }
+
+    await prisma.chatHistory.deleteMany({
+      where: {
+        userId: user.id,
+        sessionId,
+      },
+    });
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Delete history error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete chat history' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## 四、前端实现
+
+### 4.1 对话页面组件
+
+`app/(dashboard)/adp-chat/page.tsx`:
+
+```typescript
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { ADPService } from '@/lib/services/adp.service';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+export default function ADPChatPage() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sessionId] = useState(() => ADPService.generateSessionId());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 自动滚动到底部
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input.trim(),
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      // 创建AI消息占位符
+      const aiMessageId = (Date.now() + 1).toString();
+      const aiMessage: Message = {
+        id: aiMessageId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, aiMessage]);
+
+      // 建立SSE连接
+      const response = await fetch('/api/adp/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: userMessage.content,
+          sessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      // 读取SSE流
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('Response body is null');
+      }
+
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const data = line.substring(5).trim();
+            
+            if (data === '[DONE]') {
+              setLoading(false);
+              return;
+            }
+
+            try {
+              const event = JSON.parse(data);
+
+              if (event.type === 'reply') {
+                // 更新AI消息内容
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === aiMessageId
+                      ? { ...msg, content: event.payload.content }
+                      : msg
+                  )
+                );
+              } else if (event.type === 'error') {
+                throw new Error(event.error?.message || 'AI response error');
+              }
+
+            } catch (e) {
+              console.error('Parse error:', e);
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Send message error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to send message');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const clearChat = () => {
+    if (confirm('Are you sure you want to clear this chat?')) {
+      setMessages([]);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen max-w-4xl mx-auto">
+      {/* 顶部栏 */}
+      <div className="flex items-center justify-between p-4 border-b">
+        <h1 className="text-2xl font-bold">AI Assistant</h1>
+        <button
+          onClick={clearChat}
+          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+        >
+          Clear Chat
+        </button>
+      </div>
+
+      {/* 消息列表 */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && (
+          <div className="text-center text-gray-500 mt-8">
+            <p>Start a conversation with AI Assistant</p>
+          </div>
+        )}
+
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${
+              message.role === 'user' ? 'justify-end' : 'justify-start'
+            }`}
+          >
+            <div
+              className={`max-w-[70%] rounded-lg p-4 ${
+                message.role === 'user'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-900'
+              }`}
+            >
+              <div className="whitespace-pre-wrap">{message.content}</div>
+              {message.content === '' && loading && (
+                <div className="flex space-x-2">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* 输入框 */}
+      <div className="border-t p-4">
+        <div className="flex space-x-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
+            className="flex-1 px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={1}
+            disabled={loading}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={loading || !input.trim()}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## 五、测试
+
+### 5.1 单元测试
+
+`__tests__/adp.service.test.ts`:
+
+```typescript
+import { ADPService } from '@/lib/services/adp.service';
+
+describe('ADPService', () => {
+  it('should generate valid session ID', () => {
+    const sessionId = ADPService.generateSessionId();
+    expect(sessionId).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('should generate valid request ID', () => {
+    const requestId = ADPService.generateRequestId();
+    expect(requestId).toMatch(/^req_/);
+  });
+
+  // 集成测试（需要真实AppKey）
+  it('should send chat message', async () => {
+    const response = await ADPService.chat({
+      sessionId: ADPService.generateSessionId(),
+      visitorBizId: 'test_user',
+      content: '你好',
+      stream: 'disable',
+    });
+
+    expect(response).toBeTruthy();
+    expect(typeof response).toBe('string');
+  }, 30000); // 30秒超时
+});
+```
+
+### 5.2 API测试
+
+使用curl测试：
+
+```bash
+# 发送对话请求
+curl -X POST http://localhost:3000/api/adp/chat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "content": "你好，请介绍一下你自己",
+    "sessionId": "test-session-123"
+  }'
+
+# 获取对话历史
+curl -X GET "http://localhost:3000/api/adp/history?sessionId=test-session-123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+## 六、最佳实践
+
+### 6.1 会话管理
+
+```typescript
+// 使用localStorage保存会话ID
+const getOrCreateSessionId = () => {
+  let sessionId = localStorage.getItem('adp_session_id');
+  if (!sessionId) {
+    sessionId = ADPService.generateSessionId();
+    localStorage.setItem('adp_session_id', sessionId);
+  }
+  return sessionId;
+};
+```
+
+### 6.2 错误处理
+
+```typescript
+// 统一错误处理
+const handleADPError = (error: any) => {
+  const errorCode = error?.code || -1;
+  
+  const errorMessages: Record<number, string> = {
+    460004: '应用不存在，请检查配置',
+    460005: '认证失败，请重新登录',
+    460006: '会话已过期，请刷新页面',
+    460007: '消息不能为空',
+    460008: '请求过于频繁，请稍后再试',
+  };
+
+  return errorMessages[errorCode] || '服务暂时不可用，请稍后再试';
+};
+```
+
+### 6.3 限流保护
+
+```typescript
+// 客户端限流
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 1000; // 1秒
+
+const sendMessageWithRateLimit = async (content: string) => {
+  const now = Date.now();
+  if (now - lastRequestTime < MIN_REQUEST_INTERVAL) {
+    throw new Error('请不要发送过于频繁');
+  }
+  lastRequestTime = now;
+  
+  // 发送消息...
+};
+```
+
+### 6.4 内容过滤
+
+```typescript
+// 过滤敏感内容
+const filterContent = (content: string): string => {
+  // 移除特殊字符
+  content = content.replace(/[<>]/g, '');
+  
+  // 限制长度
+  const MAX_LENGTH = 2000;
+  if (content.length > MAX_LENGTH) {
+    content = content.substring(0, MAX_LENGTH);
+  }
+  
+  return content.trim();
+};
+```
+
+---
+
+## 七、常见问题
+
+### Q1: 460004 应用不存在
+**原因**: AppKey错误或应用未发布  
+**解决**: 检查AppKey，确保应用已在控制台发布
+
+### Q2: SSE连接中断
+**原因**: 网络问题或服务器超时  
+**解决**: 实现重连机制，添加心跳检测
+
+### Q3: 流式响应卡顿
+**原因**: 网络延迟或服务器负载高  
+**解决**: 使用loading状态，优化UI反馈
+
+### Q4: 会话上下文丢失
+**原因**: sessionId未正确传递  
+**解决**: 在同一会话中使用同一sessionId
+
+---
+
+## 八、相关资源
+
+- **官方文档**: https://cloud.tencent.com/document/product/1759
+- **API文档**: https://cloud.tencent.com/document/product/1759/105561
+- **控制台**: https://console.cloud.tencent.com/adp
+- **技术支持**: 腾讯云工单系统
+
+---
+
+**文档版本**: v1.0  
+**最后更新**: 2025-12-13  
+**维护者**: AI-SaaS开发团队

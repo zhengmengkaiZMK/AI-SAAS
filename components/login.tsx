@@ -14,12 +14,14 @@ import {
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { IconBrandGithub } from "@tabler/icons-react";
+import { useRouter, usePathname } from "next/navigation";
+import { Github } from "lucide-react";
 import Password from "./password";
 import { Button } from "./button";
 import { Logo } from "./Logo";
 import { GoogleSignInButton } from "./google-signin-button";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
 
 const formSchema = z.object({
   email: z
@@ -38,6 +40,12 @@ const formSchema = z.object({
 export type LoginUser = z.infer<typeof formSchema>;
 
 export function LoginForm() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const isZh = pathname.startsWith("/zh");
+  const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<LoginUser>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,8 +56,29 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginUser) {
     try {
-      console.log("submitted form", values);
-    } catch (e) {}
+      setIsLoading(true);
+      setError("");
+
+      const result = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+
+      if (result?.ok) {
+        router.push("/");
+        router.refresh();
+      }
+    } catch (e) {
+      setError(isZh ? "登录失败，请稍后重试" : "Login failed, please try again later");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -61,11 +90,18 @@ export function LoginForm() {
               <Logo />
             </div>
             <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-black dark:text-white">
-              Sign in to your account
+              {isZh ? "登录您的账户" : "Sign in to your account"}
             </h2>
           </div>
 
           <div className="mt-10">
+            {error && (
+              <div className="mb-4 p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {error}
+                </p>
+              </div>
+            )}
             <div>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -81,7 +117,7 @@ export function LoginForm() {
                           htmlFor="email"
                           className="block text-sm font-medium leading-6 text-neutral-700 dark:text-muted-dark"
                         >
-                          Email address
+                          {isZh ? "邮箱地址" : "Email address"}
                         </label>
                         <FormControl>
                           <div className="mt-2">
@@ -110,7 +146,7 @@ export function LoginForm() {
                           htmlFor="password"
                           className="block text-sm font-medium leading-6 text-neutral-700 dark:text-muted-dark"
                         >
-                          Password
+                          {isZh ? "密码" : "Password"}
                         </label>
                         <FormControl>
                           <div className="mt-2">
@@ -132,21 +168,23 @@ export function LoginForm() {
                 <div className="flex items-center justify-between">
                   <div className="text-sm leading-6">
                     <Link href="#" className="font-normal text-neutral-500">
-                      Forgot password?
+                      {isZh ? "忘记密码？" : "Forgot password?"}
                     </Link>
                   </div>
                 </div>
 
                 <div>
-                  <Button className="w-full">Sign in</Button>
+                  <Button className="w-full" disabled={isLoading}>
+                    {isLoading ? (isZh ? "登录中..." : "Signing in...") : (isZh ? "登录" : "Sign in")}
+                  </Button>
                   <p
                     className={cn(
                       "text-sm text-neutral-500 text-center mt-4 text-muted dark:text-muted-dark"
                     )}
                   >
-                    Don&apos; have an account?{" "}
+                    {isZh ? "还没有账户？" : "Don't have an account?"}{" "}
                     <Link href="/signup" className="text-black dark:text-white">
-                      Sign up
+                      {isZh ? "注册" : "Sign up"}
                     </Link>
                   </p>
                 </div>
@@ -163,14 +201,14 @@ export function LoginForm() {
                 </div>
                 <div className="relative flex justify-center text-sm font-medium leading-6">
                   <span className="bg-white px-6 text-neutral-400 dark:text-neutral-500 dark:bg-black">
-                    Or continue with
+                    {isZh ? "或使用以下方式继续" : "Or continue with"}
                   </span>
                 </div>
               </div>
 
               <div className="mt-6 w-full flex flex-col gap-3">
                 <Button onClick={() => {}} className="w-full py-1.5">
-                  <IconBrandGithub className="h-5 w-5" />
+                  <Github className="h-5 w-5" />
                   <span className="text-sm font-semibold leading-6">
                     Github
                   </span>
@@ -179,25 +217,24 @@ export function LoginForm() {
                 <GoogleSignInButton 
                   onClick={() => {
                     console.log("Google Sign-In initiated");
-                    // 这里会触发 OAuth 流程
                   }}
                 />
               </div>
 
               <p className="text-neutral-600 dark:text-neutral-400 text-sm text-center mt-8">
-                By clicking on sign in, you agree to our{" "}
+                {isZh ? "点击登录即表示您同意我们的" : "By clicking on sign in, you agree to our"}{" "}
                 <Link
                   href="#"
                   className="text-neutral-500 dark:text-neutral-300"
                 >
-                  Terms of Service
+                  {isZh ? "服务条款" : "Terms of Service"}
                 </Link>{" "}
-                and{" "}
+                {isZh ? "和" : "and"}{" "}
                 <Link
                   href="#"
                   className="text-neutral-500 dark:text-neutral-300"
                 >
-                  Privacy Policy
+                  {isZh ? "隐私政策" : "Privacy Policy"}
                 </Link>
               </p>
             </div>

@@ -1,0 +1,1123 @@
+# Serper.dev API 对接文档
+
+## 文档概述
+
+本文档详细说明如何使用Serper.dev的Google Search API来搜索Reddit内容，替代PRAW方案。
+
+**官网**: https://serper.dev/  
+**API文档**: https://serper.dev/docs  
+**优势**: 无需Reddit API审批，基于Google搜索，纯TypeScript实现
+
+---
+
+## 一、Serper.dev 简介
+
+### 1.1 什么是Serper.dev
+
+Serper.dev是一个高速Google搜索API服务，提供结构化的搜索结果数据。
+
+**核心特性**:
+- ⚡ 超快响应（~0.3秒）
+- 🎯 支持site:过滤（如site:reddit.com）
+- 📊 返回结构化JSON数据
+- 🔍 支持多种搜索类型（web、images、news等）
+- 💰 免费额度：2,500次/月
+
+### 1.2 定价方案
+
+| 套餐 | 价格 | 搜索次数 | 适用场景 |
+|------|------|---------|---------|
+| Free | $0 | 2,500次/月 | 开发测试 |
+| Developer | $50/月 | 50,000次/月 | 小型应用 |
+| Business | $200/月 | 250,000次/月 | 中型应用 |
+| Enterprise | 联系销售 | 自定义 | 大型应用 |
+
+**计费说明**: 
+- 按实际搜索次数计费
+- 超出额度后按$0.001/次计费
+- 每月1号重置额度
+
+---
+
+## 二、注册和配置
+
+### 2.1 注册账号
+
+1. 访问 https://serper.dev/
+2. 点击 "Sign Up" 注册账号
+3. 使用Google账号快速登录
+4. 验证邮箱
+
+### 2.2 获取API密钥
+
+1. 登录后进入Dashboard
+2. 在Dashboard首页找到 "API Key" 部分
+3. 点击 "Show API Key" 查看密钥
+4. 点击复制图标复制API密钥
+
+**示例API密钥格式**:
+```
+1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p
+```
+
+### 2.3 配置环境变量
+
+在项目根目录的`.env.local`文件中添加：
+
+```env
+# Serper.dev API配置
+SERPER_API_KEY=your_serper_api_key_here
+SERPER_API_URL=https://google.serper.dev/search
+
+# 可选：设置超时时间（毫秒）
+SERPER_TIMEOUT=5000
+```
+
+**安全提示**:
+- ⚠️ 不要将API密钥提交到Git仓库
+- ⚠️ 在`.gitignore`中确保包含`.env.local`
+- ⚠️ 生产环境使用环境变量管理服务
+
+---
+
+## 三、API基础使用
+
+### 3.1 基本请求结构
+
+```typescript
+const response = await fetch('https://google.serper.dev/search', {
+  method: 'POST',
+  headers: {
+    'X-API-KEY': 'your_api_key',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    q: 'site:reddit.com python programming',
+    num: 10,
+  }),
+});
+
+const data = await response.json();
+```
+
+### 3.2 请求参数
+
+| 参数 | 类型 | 必填 | 说明 | 示例 |
+|------|------|------|------|------|
+| q | string | 是 | 搜索查询词 | "python tips" |
+| num | number | 否 | 返回结果数量，默认10，最大100 | 25 |
+| page | number | 否 | 页码，从1开始，最大10 | 1 |
+| gl | string | 否 | 国家代码 | "us" |
+| hl | string | 否 | 语言代码 | "en" |
+| autocorrect | boolean | 否 | 自动纠错，默认true | true |
+| tbs | string | 否 | 时间范围过滤 | "qdr:d"（最近一天） |
+
+### 3.3 响应结构
+
+```typescript
+{
+  "searchParameters": {
+    "q": "site:reddit.com python programming",
+    "num": 10,
+    "type": "search"
+  },
+  "organic": [
+    {
+      "position": 1,
+      "title": "Best Python tips for beginners",
+      "link": "https://reddit.com/r/Python/comments/abc123/...",
+      "snippet": "Here are some great Python tips...",
+      "date": "2 days ago",
+      "domain": "reddit.com"
+    }
+    // ... more results
+  ],
+  "searchInformation": {
+    "totalResults": "1,234,567",
+    "timeTaken": 0.35,
+    "organic_results_state": "Results for exact spelling"
+  }
+}
+```
+
+---
+
+## 四、Reddit搜索实现
+
+### 4.1 创建Serper Service
+
+`lib/services/serper.service.ts`:
+
+```typescript
+/**
+ * Serper.dev API客户端
+ * 用于搜索Reddit内容
+ */
+
+const SERPER_API_URL = process.env.SERPER_API_URL || 'https://google.serper.dev/search';
+const SERPER_API_KEY = process.env.SERPER_API_KEY!;
+const SERPER_TIMEOUT = parseInt(process.env.SERPER_TIMEOUT || '5000');
+
+export interface SerperSearchParams {
+  query: string;
+  num?: number;
+  page?: number;
+  gl?: string; // 国家代码
+  hl?: string; // 语言代码
+}
+
+export interface RedditPost {
+  title: string;
+  link: string;
+  snippet: string;
+  date?: string;
+  subreddit?: string;
+  position: number;
+  domain: string;
+}
+
+export interface SerperSearchResult {
+  posts: RedditPost[];
+  total: number;
+  searchTime: number;
+  query: string;
+}
+
+export class SerperService {
+  
+  /**
+   * 搜索Reddit帖子
+   */
+  static async searchReddit(params: SerperSearchParams): Promise<SerperSearchResult> {
+    const { query, num = 25, page = 1, gl = 'us', hl = 'en' } = params;
+    
+    if (!query || query.trim().length === 0) {
+      throw new Error('Search query is required');
+    }
+    
+    if (!SERPER_API_KEY) {
+      throw new Error('SERPER_API_KEY is not configured');
+    }
+    
+    try {
+      // 构建搜索查询，限定在Reddit站点
+      const searchQuery = `site:reddit.com ${query.trim()}`;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), SERPER_TIMEOUT);
+      
+      const response = await fetch(SERPER_API_URL, {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': SERPER_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          q: searchQuery,
+          num: Math.min(num, 100), // 限制最多100条
+          page,
+          gl,
+          hl,
+          autocorrect: true,
+        }),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Serper API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      // 解析结果
+      const posts = this.parseSearchResults(data);
+      
+      return {
+        posts,
+        total: this.parseTotalResults(data.searchInformation?.totalResults),
+        searchTime: data.searchInformation?.timeTaken || 0,
+        query: query,
+      };
+
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Search request timeout');
+      }
+      console.error('Serper search error:', error);
+      throw new Error(error instanceof Error ? error.message : 'Search failed');
+    }
+  }
+
+  /**
+   * 搜索指定子版块的帖子
+   */
+  static async searchSubreddit(
+    subreddit: string,
+    query?: string,
+    num: number = 25
+  ): Promise<SerperSearchResult> {
+    if (!subreddit || subreddit.trim().length === 0) {
+      throw new Error('Subreddit name is required');
+    }
+    
+    // 移除r/前缀（如果有）
+    const cleanSubreddit = subreddit.replace(/^r\//, '').trim();
+    
+    // 构建子版块搜索
+    const searchQuery = query && query.trim()
+      ? `site:reddit.com/r/${cleanSubreddit} ${query.trim()}`
+      : `site:reddit.com/r/${cleanSubreddit}`;
+    
+    return this.searchReddit({ query: searchQuery, num });
+  }
+
+  /**
+   * 解析Serper返回的搜索结果
+   */
+  private static parseSearchResults(data: any): RedditPost[] {
+    const organic = data.organic || [];
+    
+    return organic.map((result: any, index: number) => {
+      // 从URL中提取子版块名称
+      const subredditMatch = result.link?.match(/reddit\.com\/r\/([^\/]+)/);
+      const subreddit = subredditMatch ? subredditMatch[1] : null;
+      
+      return {
+        title: result.title || 'Untitled',
+        link: result.link || '',
+        snippet: result.snippet || '',
+        date: result.date || null,
+        subreddit,
+        position: result.position || index + 1,
+        domain: result.domain || 'reddit.com',
+      };
+    }).filter(post => post.link); // 过滤掉没有链接的结果
+  }
+
+  /**
+   * 解析总结果数量
+   */
+  private static parseTotalResults(totalStr?: string): number {
+    if (!totalStr) return 0;
+    // 移除逗号，转换为数字
+    const num = parseInt(totalStr.replace(/,/g, ''));
+    return isNaN(num) ? 0 : num;
+  }
+
+  /**
+   * 获取单个Reddit帖子详情（通过URL）
+   */
+  static async getPostByUrl(postUrl: string): Promise<RedditPost | null> {
+    if (!postUrl) {
+      throw new Error('Post URL is required');
+    }
+    
+    try {
+      const response = await fetch(SERPER_API_URL, {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': SERPER_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          q: `site:${postUrl}`,
+          num: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch post details');
+      }
+
+      const data = await response.json();
+      const posts = this.parseSearchResults(data);
+      
+      return posts[0] || null;
+
+    } catch (error) {
+      console.error('Get post error:', error);
+      return null;
+    }
+  }
+}
+```
+
+### 4.2 TypeScript类型定义
+
+`types/serper.ts`:
+
+```typescript
+export interface SerperSearchParams {
+  query: string;
+  num?: number;
+  page?: number;
+  gl?: string;
+  hl?: string;
+}
+
+export interface RedditPost {
+  title: string;
+  link: string;
+  snippet: string;
+  date?: string;
+  subreddit?: string;
+  position: number;
+  domain: string;
+}
+
+export interface SerperSearchResult {
+  posts: RedditPost[];
+  total: number;
+  searchTime: number;
+  query: string;
+}
+
+export interface SerperAPIResponse {
+  searchParameters: {
+    q: string;
+    num: number;
+    type: string;
+  };
+  organic: Array<{
+    position: number;
+    title: string;
+    link: string;
+    snippet: string;
+    date?: string;
+    domain: string;
+  }>;
+  searchInformation: {
+    totalResults: string;
+    timeTaken: number;
+    organic_results_state: string;
+  };
+}
+```
+
+---
+
+## 五、Next.js API集成
+
+### 5.1 搜索API路由
+
+`app/api/reddit/search/route.ts`:
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { SerperService } from '@/lib/services/serper.service';
+import { verifyAuth } from '@/lib/auth';
+import { checkQuota, decrementQuota } from '@/lib/services/quota.service';
+
+export async function POST(req: NextRequest) {
+  try {
+    // 1. 验证用户认证
+    const user = await verifyAuth(req);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please login.' },
+        { status: 401 }
+      );
+    }
+    
+    // 2. 检查配额
+    const hasQuota = await checkQuota(user.id);
+    if (!hasQuota) {
+      return NextResponse.json(
+        { 
+          error: 'Daily quota exceeded. Please upgrade to premium.',
+          code: 'QUOTA_EXCEEDED'
+        },
+        { status: 429 }
+      );
+    }
+    
+    // 3. 获取搜索参数
+    const body = await req.json();
+    const { query, num = 25, page = 1 } = body;
+    
+    if (!query || query.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Query parameter is required' },
+        { status: 400 }
+      );
+    }
+    
+    // 4. 调用Serper搜索
+    const result = await SerperService.searchReddit({
+      query: query.trim(),
+      num: Math.min(num, 25), // 限制最多25条
+      page,
+    });
+    
+    // 5. 扣减配额
+    await decrementQuota(user.id);
+    
+    // 6. 记录搜索历史（异步，不阻塞响应）
+    // saveSearchHistory(user.id, query, 'reddit').catch(console.error);
+    
+    return NextResponse.json({
+      success: true,
+      data: result.posts,
+      total: result.total,
+      searchTime: result.searchTime,
+      query: result.query,
+    });
+    
+  } catch (error) {
+    console.error('Reddit search error:', error);
+    
+    // 区分不同类型的错误
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        return NextResponse.json(
+          { error: 'Search timeout. Please try again.' },
+          { status: 504 }
+        );
+      }
+      if (error.message.includes('SERPER_API_KEY')) {
+        return NextResponse.json(
+          { error: 'Service configuration error.' },
+          { status: 500 }
+        );
+      }
+    }
+    
+    return NextResponse.json(
+      { error: 'Search failed. Please try again later.' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 5.2 子版块搜索API
+
+`app/api/reddit/subreddit/[name]/route.ts`:
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { SerperService } from '@/lib/services/serper.service';
+import { verifyAuth } from '@/lib/auth';
+import { checkQuota, decrementQuota } from '@/lib/services/quota.service';
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { name: string } }
+) {
+  try {
+    // 1. 验证认证
+    const user = await verifyAuth(req);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    // 2. 检查配额
+    const hasQuota = await checkQuota(user.id);
+    if (!hasQuota) {
+      return NextResponse.json(
+        { error: 'Daily quota exceeded' },
+        { status: 429 }
+      );
+    }
+    
+    // 3. 获取子版块名称和可选查询
+    const { name } = params;
+    const { searchParams } = new URL(req.url);
+    const query = searchParams.get('query') || '';
+    const num = parseInt(searchParams.get('num') || '25');
+    
+    if (!name || name.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Subreddit name is required' },
+        { status: 400 }
+      );
+    }
+    
+    // 4. 搜索子版块
+    const result = await SerperService.searchSubreddit(
+      name,
+      query,
+      Math.min(num, 25)
+    );
+    
+    // 5. 扣减配额
+    await decrementQuota(user.id);
+    
+    return NextResponse.json({
+      success: true,
+      data: result.posts,
+      total: result.total,
+      subreddit: name,
+    });
+    
+  } catch (error) {
+    console.error('Subreddit search error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Search failed' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## 六、前端实现
+
+### 6.1 搜索页面组件
+
+`app/(dashboard)/reddit-search/page.tsx`:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { Search, ExternalLink, TrendingUp, Loader2 } from 'lucide-react';
+
+interface RedditPost {
+  title: string;
+  link: string;
+  snippet: string;
+  date?: string;
+  subreddit?: string;
+  position: number;
+}
+
+const POPULAR_SUBREDDITS = [
+  'python', 'javascript', 'webdev', 'programming',
+  'technology', 'gaming', 'fitness', 'cooking'
+];
+
+export default function RedditSearchPage() {
+  const [query, setQuery] = useState('');
+  const [subreddit, setSubreddit] = useState('');
+  const [results, setResults] = useState<RedditPost[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [searchInfo, setSearchInfo] = useState<{
+    total: number;
+    searchTime: number;
+  } | null>(null);
+
+  const handleSearch = async () => {
+    if (!query.trim() && !subreddit.trim()) {
+      setError('Please enter a search query or select a subreddit');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setResults([]);
+    setSearchInfo(null);
+
+    try {
+      let endpoint: string;
+      let options: RequestInit;
+
+      if (subreddit.trim()) {
+        // 搜索特定子版块
+        const queryParam = query ? `?query=${encodeURIComponent(query)}` : '';
+        endpoint = `/api/reddit/subreddit/${subreddit}${queryParam}`;
+        options = { method: 'GET' };
+      } else {
+        // 全站搜索
+        endpoint = '/api/reddit/search';
+        options = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query }),
+        };
+      }
+
+      const response = await fetch(endpoint, options);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Search failed');
+      }
+
+      setResults(data.data || []);
+      setSearchInfo({
+        total: data.total || 0,
+        searchTime: data.searchTime || 0,
+      });
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Search failed');
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubredditClick = (sub: string) => {
+    setSubreddit(sub);
+    setQuery('');
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold mb-2">Reddit Search</h1>
+        <p className="text-gray-600">
+          Search Reddit posts powered by Google Search
+        </p>
+      </div>
+
+      {/* Search Form */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div className="space-y-4">
+          {/* Query Input */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Search Query
+            </label>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Enter keywords..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                dark:bg-gray-700 dark:border-gray-600"
+              disabled={loading}
+            />
+          </div>
+
+          {/* Subreddit Input */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Subreddit (optional)
+            </label>
+            <input
+              type="text"
+              value={subreddit}
+              onChange={(e) => setSubreddit(e.target.value)}
+              placeholder="e.g., python, webdev"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg
+                focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                dark:bg-gray-700 dark:border-gray-600"
+              disabled={loading}
+            />
+          </div>
+
+          {/* Popular Subreddits */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              <TrendingUp className="inline w-4 h-4 mr-1" />
+              Popular Subreddits
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {POPULAR_SUBREDDITS.map((sub) => (
+                <button
+                  key={sub}
+                  onClick={() => handleSubredditClick(sub)}
+                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 
+                    dark:bg-gray-700 dark:hover:bg-gray-600
+                    rounded-full text-sm transition-colors"
+                  disabled={loading}
+                >
+                  r/{sub}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search Button */}
+          <button
+            onClick={handleSearch}
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg 
+              hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed
+              flex items-center justify-center gap-2 font-medium
+              transition-colors"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Searching...
+              </>
+            ) : (
+              <>
+                <Search size={20} />
+                Search Reddit
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 
+          dark:border-red-800 text-red-700 dark:text-red-400 
+          px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      {/* Search Info */}
+      {searchInfo && (
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Found approximately {searchInfo.total.toLocaleString()} results 
+          in {searchInfo.searchTime.toFixed(2)} seconds
+        </div>
+      )}
+
+      {/* Search Results */}
+      {results.length > 0 && (
+        <div className="space-y-4">
+          {results.map((post, index) => (
+            <div
+              key={index}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md 
+                hover:shadow-xl transition-shadow p-6"
+            >
+              {/* Subreddit Badge */}
+              {post.subreddit && (
+                <div className="mb-2">
+                  <span className="inline-block px-3 py-1 bg-blue-100 
+                    dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 
+                    text-xs font-medium rounded-full">
+                    r/{post.subreddit}
+                  </span>
+                </div>
+              )}
+
+              {/* Title */}
+              <a
+                href={post.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xl font-semibold text-blue-600 
+                  dark:text-blue-400 hover:underline 
+                  flex items-start gap-2 group"
+              >
+                <span className="flex-1">{post.title}</span>
+                <ExternalLink 
+                  size={18} 
+                  className="mt-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" 
+                />
+              </a>
+
+              {/* Snippet */}
+              <p className="text-gray-700 dark:text-gray-300 mt-3 leading-relaxed">
+                {post.snippet}
+              </p>
+
+              {/* Meta Info */}
+              <div className="mt-3 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                {post.date && (
+                  <span>{post.date}</span>
+                )}
+                <span>Position: #{post.position}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && results.length === 0 && !error && (
+        <div className="text-center py-16">
+          <Search size={64} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400 text-lg">
+            Enter a search query to find Reddit posts
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## 七、高级搜索技巧
+
+### 7.1 搜索运算符
+
+Serper.dev支持Google搜索运算符：
+
+```typescript
+// 精确匹配
+q: 'site:reddit.com "python tips"'
+
+// 排除关键词
+q: 'site:reddit.com python -django'
+
+// OR运算符
+q: 'site:reddit.com python OR javascript'
+
+// 时间范围（最近24小时）
+q: 'site:reddit.com python',
+tbs: 'qdr:d'
+
+// 时间范围选项
+// qdr:h - 最近1小时
+// qdr:d - 最近1天
+// qdr:w - 最近1周
+// qdr:m - 最近1月
+// qdr:y - 最近1年
+```
+
+### 7.2 子版块特定搜索
+
+```typescript
+// 搜索特定子版块
+const result = await SerperService.searchReddit({
+  query: 'site:reddit.com/r/python async programming'
+});
+
+// 或使用专用方法
+const result = await SerperService.searchSubreddit('python', 'async programming');
+```
+
+### 7.3 多子版块搜索
+
+```typescript
+// 搜索多个子版块
+const query = '(site:reddit.com/r/python OR site:reddit.com/r/javascript) async';
+const result = await SerperService.searchReddit({ query });
+```
+
+---
+
+## 八、错误处理
+
+### 8.1 常见错误代码
+
+| 状态码 | 错误 | 原因 | 解决方案 |
+|--------|------|------|---------|
+| 401 | Unauthorized | API密钥无效或缺失 | 检查SERPER_API_KEY配置 |
+| 429 | Rate Limit | 超出API调用限制 | 升级套餐或等待重置 |
+| 400 | Bad Request | 请求参数错误 | 检查请求格式 |
+| 500 | Internal Error | Serper服务器错误 | 稍后重试 |
+| 504 | Timeout | 请求超时 | 增加超时时间或重试 |
+
+### 8.2 错误处理最佳实践
+
+```typescript
+try {
+  const result = await SerperService.searchReddit({ query });
+  return result;
+} catch (error) {
+  if (error instanceof Error) {
+    // API配置错误
+    if (error.message.includes('SERPER_API_KEY')) {
+      console.error('Serper API key not configured');
+      throw new Error('Search service not available');
+    }
+    
+    // 超时错误
+    if (error.message.includes('timeout')) {
+      console.error('Search timeout');
+      throw new Error('Search took too long, please try again');
+    }
+    
+    // 速率限制
+    if (error.message.includes('429')) {
+      console.error('Rate limit exceeded');
+      throw new Error('Too many requests, please try again later');
+    }
+  }
+  
+  // 通用错误
+  throw new Error('Search failed, please try again');
+}
+```
+
+---
+
+## 九、性能优化
+
+### 9.1 缓存策略
+
+```typescript
+import { LRUCache } from 'lru-cache';
+
+// 创建缓存（5分钟过期）
+const cache = new LRUCache<string, SerperSearchResult>({
+  max: 100,
+  ttl: 1000 * 60 * 5, // 5分钟
+});
+
+export class SerperService {
+  static async searchReddit(params: SerperSearchParams): Promise<SerperSearchResult> {
+    // 生成缓存键
+    const cacheKey = JSON.stringify(params);
+    
+    // 检查缓存
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
+    // 执行搜索
+    const result = await this.performSearch(params);
+    
+    // 存入缓存
+    cache.set(cacheKey, result);
+    
+    return result;
+  }
+}
+```
+
+### 9.2 请求限流
+
+```typescript
+import pLimit from 'p-limit';
+
+// 限制并发请求数
+const limit = pLimit(5);
+
+const searches = ['query1', 'query2', 'query3'];
+const results = await Promise.all(
+  searches.map(query => 
+    limit(() => SerperService.searchReddit({ query }))
+  )
+);
+```
+
+---
+
+## 十、监控和日志
+
+### 10.1 请求日志
+
+```typescript
+export class SerperService {
+  static async searchReddit(params: SerperSearchParams): Promise<SerperSearchResult> {
+    const startTime = Date.now();
+    
+    try {
+      console.log('[Serper] Search started:', {
+        query: params.query,
+        num: params.num,
+      });
+      
+      const result = await this.performSearch(params);
+      
+      const duration = Date.now() - startTime;
+      console.log('[Serper] Search completed:', {
+        query: params.query,
+        resultsCount: result.posts.length,
+        duration: `${duration}ms`,
+      });
+      
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error('[Serper] Search failed:', {
+        query: params.query,
+        duration: `${duration}ms`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+}
+```
+
+### 10.2 使用量监控
+
+定期检查API使用量：
+
+```typescript
+// 记录每次搜索
+async function logAPIUsage(userId: string, query: string) {
+  await db.apiUsage.create({
+    data: {
+      userId,
+      service: 'serper',
+      query,
+      timestamp: new Date(),
+    },
+  });
+}
+
+// 统计月度使用量
+async function getMonthlyUsage() {
+  const count = await db.apiUsage.count({
+    where: {
+      service: 'serper',
+      timestamp: {
+        gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      },
+    },
+  });
+  
+  console.log(`Serper API calls this month: ${count} / 2500`);
+  return count;
+}
+```
+
+---
+
+## 十一、与PRAW方案对比
+
+| 特性 | PRAW方案 | Serper.dev方案 |
+|------|----------|----------------|
+| **设置复杂度** | 🔴 需要Reddit审批 | 🟢 立即可用 |
+| **技术栈** | 🔴 需要Python后端 | 🟢 纯TypeScript |
+| **维护成本** | 🔴 需维护Python服务 | 🟢 无额外服务 |
+| **搜索能力** | 🟡 Reddit API限制 | 🟢 Google级别搜索 |
+| **数据完整性** | 🟢 完整的Reddit数据 | 🟡 基于Google索引 |
+| **评论获取** | 🟢 完整评论树 | 🔴 不支持（需额外方案） |
+| **成本** | 🟢 免费 | 🟡 2500次/月免费 |
+| **速度** | 🟡 中等 | 🟢 快速(~0.3s) |
+| **部署** | 🔴 需Docker/容器 | 🟢 Serverless友好 |
+
+---
+
+## 十二、常见问题
+
+### Q1: Serper.dev如何计费？
+**答**: 按实际搜索次数计费，每个POST请求计为1次搜索。免费账户有2500次/月额度。
+
+### Q2: 可以获取Reddit评论吗？
+**答**: Serper.dev只返回帖子信息，不包含评论。如需评论，可以：
+- 引导用户点击链接到Reddit查看
+- 使用Reddit的JSON API（无需认证）获取评论
+- 结合PRAW使用（仅获取评论）
+
+### Q3: 搜索结果实时吗？
+**答**: 基于Google索引，通常有几分钟到几小时的延迟，但大部分内容是实时的。
+
+### Q4: 如何优化搜索质量？
+**答**: 
+- 使用精确的关键词
+- 使用引号进行精确匹配
+- 使用排除运算符(-关键词)
+- 限定时间范围(tbs参数)
+
+### Q5: API密钥安全吗？
+**答**: API密钥仅在服务端使用，不暴露给前端。确保：
+- 使用环境变量
+- 不提交到Git
+- 定期轮换密钥
+
+---
+
+## 十三、相关资源
+
+- **Serper.dev官网**: https://serper.dev/
+- **API文档**: https://serper.dev/docs
+- **Playground**: https://serper.dev/playground
+- **定价**: https://serper.dev/pricing
+- **支持**: support@serper.dev
+
+---
+
+**文档版本**: v1.0  
+**最后更新**: 2025-12-13  
+**维护者**: AI-SaaS开发团队

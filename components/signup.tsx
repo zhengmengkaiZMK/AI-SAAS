@@ -14,35 +14,48 @@ import {
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { IconBrandGithub } from "@tabler/icons-react";
+import { useRouter, usePathname } from "next/navigation";
+import { Github } from "lucide-react";
 import Password from "./password";
 import { Button } from "./button";
 import { Logo } from "./Logo";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 
 const formSchema = z.object({
   name: z
     .string({
-      required_error: "Please enter password",
+      required_error: "请输入姓名",
     })
-    .min(1, "Please enter your name"),
+    .min(1, "请输入姓名"),
   email: z
     .string({
-      required_error: "Please enter email",
+      required_error: "请输入邮箱",
     })
-    .email("Please enter valid email")
-    .min(1, "Please enter email"),
+    .email("请输入有效的邮箱")
+    .min(1, "请输入邮箱"),
   password: z
     .string({
-      required_error: "Please enter password",
+      required_error: "请输入密码",
     })
-    .min(1, "Please enter password"),
+    .min(8, "密码至少需要 8 个字符")
+    .regex(/[A-Z]/, "密码必须包含至少一个大写字母")
+    .regex(/[a-z]/, "密码必须包含至少一个小写字母")
+    .regex(/[0-9]/, "密码必须包含至少一个数字")
+    .regex(/[^A-Za-z0-9]/, "密码必须包含至少一个特殊字符"),
 });
 
-export type LoginUser = z.infer<typeof formSchema>;
+export type SignupUser = z.infer<typeof formSchema>;
 
 export function SignupForm() {
-  const form = useForm<LoginUser>({
+  const router = useRouter();
+  const pathname = usePathname();
+  const isZh = pathname.startsWith("/zh");
+  const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [password, setPassword] = useState("");
+
+  const form = useForm<SignupUser>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -51,10 +64,70 @@ export function SignupForm() {
     },
   });
 
-  async function onSubmit(values: LoginUser) {
+  // 密码强度计算
+  const getPasswordStrength = (pwd: string) => {
+    let strength = 0;
+    if (pwd.length >= 8) strength++;
+    if (/[A-Z]/.test(pwd)) strength++;
+    if (/[a-z]/.test(pwd)) strength++;
+    if (/[0-9]/.test(pwd)) strength++;
+    if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+    return strength;
+  };
+
+  const passwordStrength = getPasswordStrength(password);
+  const getStrengthText = () => {
+    if (password.length === 0) return "";
+    if (passwordStrength <= 2) return isZh ? "弱" : "Weak";
+    if (passwordStrength <= 3) return isZh ? "中等" : "Medium";
+    if (passwordStrength <= 4) return isZh ? "强" : "Strong";
+    return isZh ? "很强" : "Very Strong";
+  };
+
+  const getStrengthColor = () => {
+    if (password.length === 0) return "";
+    if (passwordStrength <= 2) return "text-red-500";
+    if (passwordStrength <= 3) return "text-yellow-500";
+    if (passwordStrength <= 4) return "text-green-500";
+    return "text-green-600";
+  };
+
+  async function onSubmit(values: SignupUser) {
     try {
-      console.log("submitted form", values);
-    } catch (e) {}
+      setIsLoading(true);
+      setError("");
+
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || (isZh ? "注册失败" : "Registration failed"));
+        return;
+      }
+
+      // 注册成功后自动登录
+      const result = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+
+      if (result?.ok) {
+        router.push("/");
+        router.refresh();
+      }
+    } catch (e) {
+      setError(isZh ? "注册失败，请稍后重试" : "Registration failed, please try again later");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -66,11 +139,18 @@ export function SignupForm() {
               <Logo />
             </div>
             <h2 className="mt-8 text-2xl font-bold leading-9 tracking-tight text-black dark:text-white">
-              Sign up for an account
+              {isZh ? "注册新账户" : "Sign up for an account"}
             </h2>
           </div>
 
           <div className="mt-10">
+            {error && (
+              <div className="mb-4 p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {error}
+                </p>
+              </div>
+            )}
             <div>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -86,14 +166,14 @@ export function SignupForm() {
                           htmlFor="name"
                           className="block text-sm font-medium leading-6 text-neutral-700 dark:text-muted-dark"
                         >
-                          Full name
+                          {isZh ? "姓名" : "Full name"}
                         </label>
                         <FormControl>
                           <div className="mt-2">
                             <input
                               id="name"
                               type="name"
-                              placeholder="Manu Arora"
+                              placeholder={isZh ? "张三" : "Manu Arora"}
                               className="block w-full bg-white dark:bg-neutral-900 px-4 rounded-md border-0 py-1.5  shadow-aceternity text-black placeholder:text-gray-400 focus:ring-2 focus:ring-neutral-400 focus:outline-none sm:text-sm sm:leading-6 dark:text-white"
                               {...field}
                             />
@@ -115,7 +195,7 @@ export function SignupForm() {
                           htmlFor="email"
                           className="block text-sm font-medium leading-6 text-neutral-700 dark:text-muted-dark"
                         >
-                          Email address
+                          {isZh ? "邮箱地址" : "Email address"}
                         </label>
                         <FormControl>
                           <div className="mt-2">
@@ -144,7 +224,7 @@ export function SignupForm() {
                           htmlFor="password"
                           className="block text-sm font-medium leading-6 text-neutral-700 dark:text-muted-dark"
                         >
-                          Password
+                          {isZh ? "密码" : "Password"}
                         </label>
                         <FormControl>
                           <div className="mt-2">
@@ -154,9 +234,40 @@ export function SignupForm() {
                               placeholder="••••••••"
                               className="block w-full bg-white dark:bg-neutral-900 px-4 rounded-md border-0 py-1.5  shadow-aceternity text-black placeholder:text-gray-400 focus:ring-2 focus:ring-neutral-400 focus:outline-none sm:text-sm sm:leading-6 dark:text-white"
                               {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                setPassword(e.target.value);
+                              }}
                             />
                           </div>
                         </FormControl>
+                        {password && (
+                          <div className="mt-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-300 ${
+                                    passwordStrength <= 2
+                                      ? "bg-red-500 w-1/3"
+                                      : passwordStrength <= 3
+                                      ? "bg-yellow-500 w-2/3"
+                                      : passwordStrength <= 4
+                                      ? "bg-green-500 w-5/6"
+                                      : "bg-green-600 w-full"
+                                  }`}
+                                />
+                              </div>
+                              <span className={`text-xs font-medium ${getStrengthColor()}`}>
+                                {getStrengthText()}
+                              </span>
+                            </div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                              {isZh
+                                ? "至少8位，包含大小写字母、数字和特殊字符"
+                                : "Min 8 chars, with upper/lower case, number & symbol"}
+                            </p>
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -164,15 +275,17 @@ export function SignupForm() {
                 </div>
 
                 <div>
-                  <Button className="w-full">Sign Up</Button>
+                  <Button className="w-full" disabled={isLoading}>
+                    {isLoading ? (isZh ? "注册中..." : "Signing up...") : (isZh ? "注册" : "Sign Up")}
+                  </Button>
                   <p
                     className={cn(
                       "text-sm text-neutral-500 text-center mt-4 text-muted dark:text-muted-dark"
                     )}
                   >
-                    Already have an account?{" "}
+                    {isZh ? "已有账户？" : "Already have an account?"}{" "}
                     <Link href="/login" className="text-black dark:text-white">
-                      Sign in
+                      {isZh ? "登录" : "Sign in"}
                     </Link>
                   </p>
                 </div>
@@ -189,14 +302,14 @@ export function SignupForm() {
                 </div>
                 <div className="relative flex justify-center text-sm font-medium leading-6">
                   <span className="bg-white px-6 text-neutral-400 dark:text-neutral-500 dark:bg-black">
-                    Or continue with
+                    {isZh ? "或使用以下方式继续" : "Or continue with"}
                   </span>
                 </div>
               </div>
 
               <div className="mt-6 w-full flex items-center justify-center">
                 <Button onClick={() => {}} className="w-full py-1.5">
-                  <IconBrandGithub className="h-5 w-5" />
+                  <Github className="h-5 w-5" />
                   <span className="text-sm font-semibold leading-6">
                     Github
                   </span>
@@ -204,19 +317,19 @@ export function SignupForm() {
               </div>
 
               <p className="text-neutral-600 dark:text-neutral-400 text-sm text-center mt-8">
-                By clicking on sign up, you agree to our{" "}
+                {isZh ? "点击注册即表示您同意我们的" : "By clicking on sign up, you agree to our"}{" "}
                 <Link
                   href="#"
                   className="text-neutral-500 dark:text-neutral-300"
                 >
-                  Terms of Service
+                  {isZh ? "服务条款" : "Terms of Service"}
                 </Link>{" "}
-                and{" "}
+                {isZh ? "和" : "and"}{" "}
                 <Link
                   href="#"
                   className="text-neutral-500 dark:text-neutral-300"
                 >
-                  Privacy Policy
+                  {isZh ? "隐私政策" : "Privacy Policy"}
                 </Link>
               </p>
             </div>

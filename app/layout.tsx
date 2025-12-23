@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans";
 import { cn } from "@/lib/utils";
 import { ViewTransitions } from "next-view-transitions";
 import { ThemeProvider } from "@/context/theme-provider";
+import { SessionProvider } from "@/components/session-provider";
 
 export const metadata: Metadata = {
   title: "SaltMine",
@@ -37,7 +38,7 @@ export default function RootLayout({
             disableTransitionOnChange
             defaultTheme="light"
           >
-            {children}
+            <SessionProvider>{children}</SessionProvider>
           </ThemeProvider>
         </body>
       </html>

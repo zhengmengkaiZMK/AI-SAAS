@@ -1,0 +1,20 @@
+-- 删除依赖的视图
+DROP VIEW IF EXISTS user_stats CASCADE;
+
+-- 删除所有枚举类型（如果存在）
+DROP TYPE IF EXISTS "MembershipType" CASCADE;
+DROP TYPE IF EXISTS "PaymentProvider" CASCADE;
+DROP TYPE IF EXISTS "PaymentStatus" CASCADE;
+
+-- 重新创建枚举类型
+CREATE TYPE "MembershipType" AS ENUM ('FREE', 'PREMIUM', 'ENTERPRISE');
+CREATE TYPE "PaymentProvider" AS ENUM ('PAYPAL', 'STRIPE');
+CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED', 'CANCELLED');
+
+-- 清空现有表数据（保留结构）
+TRUNCATE TABLE chat_history CASCADE;
+TRUNCATE TABLE search_history CASCADE;
+TRUNCATE TABLE user_quotas CASCADE;
+TRUNCATE TABLE payments CASCADE;
+TRUNCATE TABLE sessions CASCADE;
+TRUNCATE TABLE users CASCADE;

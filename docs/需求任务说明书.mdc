@@ -1,0 +1,608 @@
+# AI-SaaS 功能开发需求任务说明书
+
+## 项目概述
+
+本文档定义了AI-SaaS应用的四大核心功能模块的开发任务和测试要求。
+
+**技术栈**: Next.js 15 + TypeScript + Tailwind CSS + Radix UI
+
+**开发原则**: 模块化、可测试、安全、高性能
+
+---
+
+## 模块一：用户认证系统
+
+### 1.1 功能概述
+实现完整的用户注册、登录、个人信息管理系统，支持JWT认证。
+
+### 1.2 任务清单
+
+#### 任务 1.2.1: 数据库设计与实现
+- [ ] 设计用户表（users）Schema
+  - 字段：id, email, password_hash, name, avatar, membership_type, membership_expires_at, created_at, updated_at
+- [ ] 设计会话表（sessions）Schema（可选，基于策略）
+- [ ] 使用Prisma创建数据库迁移文件
+- [ ] 编写seed脚本初始化测试数据
+
+**预计工时**: 4小时
+
+#### 任务 1.2.2: 注册功能实现
+- [ ] 创建注册页面UI组件 `/app/(auth)/signup/page.tsx`
+- [ ] 实现表单验证（Zod Schema）
+  - 邮箱格式验证
+  - 密码强度验证（至少8位，包含字母+数字）
+  - 确认密码匹配
+- [ ] 创建注册API `/app/api/auth/signup/route.ts`
+  - 检查邮箱是否已存在
+  - 密码BCrypt加密（强度10）
+  - 创建用户记录
+  - 返回JWT Token
+- [ ] 集成Google OAuth登录（可选）
+
+**预计工时**: 8小时
+
+#### 任务 1.2.3: 登录功能实现
+- [ ] 创建登录页面UI组件 `/app/(auth)/login/page.tsx`
+- [ ] 实现表单验证
+- [ ] 创建登录API `/app/api/auth/login/route.ts`
+  - 验证邮箱和密码
+  - 生成JWT Token（过期时间7天）
+  - 设置HTTP-only Cookie
+- [ ] 实现"记住我"功能
+- [ ] 实现登录失败次数限制（5次/15分钟）
+
+**预计工时**: 6小时
+
+#### 任务 1.2.4: 用户信息管理
+- [ ] 创建个人中心页面 `/app/(dashboard)/profile/page.tsx`
+- [ ] 显示用户基本信息
+  - 姓名、邮箱、头像
+  - 会员类型和到期时间
+  - 今日剩余查询次数
+- [ ] 实现信息编辑功能
+  - 修改姓名
+  - 上传/更换头像
+- [ ] 创建API `/app/api/user/profile/route.ts`
+- [ ] 实现密码修改功能
+
+**预计工时**: 6小时
+
+#### 任务 1.2.5: 认证中间件
+- [ ] 创建JWT验证中间件 `/middleware.ts`
+- [ ] 保护需要登录的路由
+  - `/dashboard/*` 路由需要认证
+- [ ] 实现Token刷新机制
+- [ ] 创建认证工具函数 `/lib/auth.ts`
+  - generateToken()
+  - verifyToken()
+  - hashPassword()
+  - comparePassword()
+
+**预计工时**: 4小时
+
+### 1.3 单元测试任务
+
+#### 测试 1.3.1: 注册功能测试
+- [ ] 测试成功注册新用户
+- [ ] 测试邮箱已存在时的错误处理
+- [ ] 测试无效邮箱格式的验证
+- [ ] 测试弱密码的验证
+- [ ] 测试密码不匹配的验证
+
+#### 测试 1.3.2: 登录功能测试
+- [ ] 测试正确凭据的成功登录
+- [ ] 测试错误密码的失败处理
+- [ ] 测试不存在用户的失败处理
+- [ ] 测试JWT Token生成和验证
+- [ ] 测试登录限流机制
+
+#### 测试 1.3.3: 用户信息测试
+- [ ] 测试获取用户信息
+- [ ] 测试更新用户信息
+- [ ] 测试未认证访问的拦截
+- [ ] 测试头像上传功能
+
+**预计总工时**: 28小时
+
+---
+
+## 模块二：Reddit数据检索功能
+
+### 2.1 功能概述
+通过Serper.dev的Google Search API实现Reddit内容检索，支持按关键词搜索帖子和检索指定子版块的帖子。
+
+**核心功能**：
+- 按关键词搜索Reddit帖子（基于Google搜索）
+- 检索指定子版块的帖子
+- 获取帖子基本信息（标题、链接、摘要、日期）
+
+**技术方案**：
+- 使用Serper.dev API（无需Reddit API审批）
+- 纯TypeScript实现（无需Python后端）
+- 简化架构，降低维护成本
+
+### 2.2 任务清单
+
+#### 任务 2.2.1: Serper.dev配置
+- [ ] 注册Serper.dev账号（https://serper.dev/）
+- [ ] 获取API密钥
+- [ ] 配置环境变量
+  - SERPER_API_KEY
+  - SERPER_API_URL（默认：https://google.serper.dev/search）
+- [ ] 熟悉API文档和限制（免费2500次/月）
+
+**预计工时**: 1小时
+
+#### 任务 2.2.2: Serper Service实现
+- [ ] 创建 `/lib/services/serper.service.ts`
+- [ ] 实现SerperService类
+  - searchReddit() - 搜索Reddit帖子
+  - searchSubreddit() - 搜索指定子版块
+  - getPostByUrl() - 获取单个帖子详情（可选）
+- [ ] 实现搜索结果解析
+  - 解析Google搜索结果
+  - 提取Reddit帖子信息（标题、链接、摘要、日期、子版块）
+  - 格式化返回数据
+- [ ] 实现错误处理和重试机制
+- [ ] 添加TypeScript类型定义
+  - SerperSearchParams
+  - RedditPost
+  - SerperSearchResult
+
+**预计工时**: 4小时
+
+#### 任务 2.2.3: Next.js API端点实现
+- [ ] 创建 `/app/api/reddit/search/route.ts`
+  - 接收关键词参数
+  - 验证用户认证
+  - 检查配额
+  - 调用SerperService.searchReddit()
+  - 扣减配额
+  - 返回搜索结果
+- [ ] 创建 `/app/api/reddit/subreddit/[name]/route.ts`
+  - 接收子版块名称和可选关键词
+  - 验证用户认证和配额
+  - 调用SerperService.searchSubreddit()
+  - 返回帖子列表
+- [ ] 实现统一错误处理
+  - 401 - 未认证
+  - 429 - 配额超限
+  - 500 - API调用失败
+- [ ] 记录搜索历史（可选）
+
+**预计工时**: 4小时
+
+#### 任务 2.2.4: Reddit搜索UI实现
+- [ ] 创建搜索页面 `/app/(dashboard)/reddit-search/page.tsx`
+- [ ] 实现搜索功能区
+  - 关键词输入框
+  - 子版块名称输入（可选）
+  - 搜索按钮
+  - 快捷子版块标签（推荐）
+- [ ] 实现搜索结果展示
+  - 帖子卡片组件
+    - 显示标题（可点击跳转到Reddit）
+    - 显示子版块标签
+    - 显示内容摘要
+    - 显示发布日期
+    - 外链图标（ExternalLink）
+  - 加载状态动画
+  - 空状态提示
+  - 错误提示（友好的错误消息）
+- [ ] 实现响应式布局
+  - 移动端适配
+  - 平板端适配
+
+**预计工时**: 6小时
+
+#### 任务 2.2.5: 配额管理
+- [ ] 创建配额服务 `/lib/services/quota.service.ts`
+- [ ] 实现每日配额检查
+  - checkQuota(userId) - 检查剩余配额
+  - decrementQuota(userId) - 扣减配额
+  - getQuotaInfo(userId) - 获取配额信息
+- [ ] 实现配额重置机制
+  - 每日0点自动重置
+  - 使用Cron Job或服务端定时任务
+- [ ] 实现配额数据库操作
+  - 创建user_quotas表
+  - 字段：id, user_id, date, searches_used, searches_limit
+- [ ] 在搜索页面显示剩余配额
+- [ ] 配额不足时显示升级提示
+  - 友好的提示文案
+  - 跳转到付费页面按钮
+
+**预计工时**: 4小时
+
+### 2.3 单元测试任务
+
+#### 测试 2.3.1: Serper Service测试
+- [ ] 测试searchReddit()方法
+  - 正常搜索返回结果
+  - 空关键词处理
+  - API错误处理
+- [ ] 测试searchSubreddit()方法
+  - 子版块搜索
+  - 带关键词的子版块搜索
+- [ ] 测试结果解析
+  - 正确提取标题、链接、摘要
+  - 正确提取子版块名称
+- [ ] 测试错误场景
+  - API密钥无效
+  - 网络超时
+  - 配额超限
+
+#### 测试 2.3.2: Next.js API测试
+- [ ] 测试搜索API端点
+  - 成功搜索场景
+  - 缺少query参数
+  - 未认证访问
+  - 配额超限
+- [ ] 测试子版块API端点
+  - 成功获取子版块帖子
+  - 无效子版块名称
+- [ ] 测试认证中间件
+- [ ] 测试配额检查和扣减
+
+#### 测试 2.3.3: 前端组件测试
+- [ ] 测试搜索表单
+  - 输入验证
+  - 表单提交
+  - Enter键提交
+- [ ] 测试搜索结果渲染
+  - 结果列表显示
+  - 加载状态
+  - 空状态
+  - 错误状态
+- [ ] 测试外链跳转
+- [ ] 测试配额显示
+
+**预计总工时**: 19小时
+
+---
+
+## 模块三：PayPal会员支付功能
+
+### 3.1 功能概述
+集成PayPal支付，实现会员订阅购买，支持订单管理和Webhook回调处理。
+
+### 3.2 任务清单
+
+#### 任务 3.2.1: PayPal配置与SDK集成
+- [ ] 注册PayPal开发者账号
+- [ ] 创建PayPal应用获取Client ID和Secret
+- [ ] 安装PayPal SDK
+  ```bash
+  npm install @paypal/checkout-server-sdk
+  npm install @paypal/react-paypal-js
+  ```
+- [ ] 配置环境变量
+  - PAYPAL_CLIENT_ID
+  - PAYPAL_CLIENT_SECRET
+  - PAYPAL_MODE (sandbox/live)
+- [ ] 创建PayPal客户端配置 `/lib/paypal-client.ts`
+
+**预计工时**: 3小时
+
+#### 任务 3.2.2: 会员套餐设计
+- [ ] 定义会员套餐
+  - 月度会员：$9.99/月
+  - 年度会员：$99.99/年（相当于8.3/月）
+- [ ] 创建定价页面组件优化
+- [ ] 创建会员套餐数据模型
+
+**预计工时**: 2小时
+
+#### 任务 3.2.3: PayPal订单创建
+- [ ] 创建订单API `/app/api/payment/create-order/route.ts`
+  - 接收套餐类型（monthly/yearly）
+  - 生成PayPal订单
+  - 记录订单到数据库（pending状态）
+  - 返回订单ID
+- [ ] 实现订单验证
+- [ ] 添加重复订单检查
+
+**预计工时**: 5小时
+
+#### 任务 3.2.4: PayPal支付流程
+- [ ] 创建支付页面 `/app/(dashboard)/payment/page.tsx`
+- [ ] 集成PayPal Buttons组件
+  ```typescript
+  <PayPalButtons
+    createOrder={createOrder}
+    onApprove={onApprove}
+    onError={onError}
+  />
+  ```
+- [ ] 实现createOrder回调
+- [ ] 实现onApprove回调（支付成功）
+  - 调用捕获订单API
+  - 更新用户会员状态
+  - 显示成功消息
+  - 跳转到会员页面
+- [ ] 实现onError回调（支付失败）
+- [ ] 添加加载状态和错误提示
+
+**预计工时**: 6小时
+
+#### 任务 3.2.5: 订单捕获和验证
+- [ ] 创建捕获API `/app/api/payment/capture-order/route.ts`
+  - 调用PayPal API捕获支付
+  - 验证支付金额
+  - 更新订单状态为completed
+  - 激活用户会员
+    - 更新users表membership_type
+    - 设置membership_expires_at
+  - 记录支付记录
+- [ ] 实现事务处理确保数据一致性
+- [ ] 添加详细日志
+
+**预计工时**: 6小时
+
+#### 任务 3.2.6: Webhook处理
+- [ ] 创建Webhook接收端点 `/app/api/payment/webhook/route.ts`
+- [ ] 验证Webhook签名
+- [ ] 处理支付事件
+  - PAYMENT.CAPTURE.COMPLETED
+  - PAYMENT.CAPTURE.DENIED
+  - BILLING.SUBSCRIPTION.CANCELLED（未来订阅功能）
+- [ ] 更新订单和会员状态
+- [ ] 发送通知邮件（可选）
+- [ ] 在PayPal后台配置Webhook URL
+
+**预计工时**: 5小时
+
+#### 任务 3.2.7: 订单管理
+- [ ] 创建订单列表页面 `/app/(dashboard)/orders/page.tsx`
+- [ ] 显示用户的历史订单
+  - 订单ID、时间、金额、状态
+- [ ] 实现订单详情查看
+- [ ] 创建订单查询API `/app/api/payment/orders/route.ts`
+
+**预计工时**: 4小时
+
+### 3.3 单元测试任务
+
+#### 测试 3.3.1: 订单创建测试
+- [ ] 测试成功创建订单
+- [ ] 测试无效套餐类型
+- [ ] 测试未认证用户
+- [ ] 测试重复订单处理
+
+#### 测试 3.3.2: 支付流程测试
+- [ ] 使用PayPal沙盒测试支付流程
+- [ ] 测试支付成功场景
+- [ ] 测试支付失败场景
+- [ ] 测试支付取消场景
+
+#### 测试 3.3.3: Webhook测试
+- [ ] 测试Webhook签名验证
+- [ ] 测试各种支付事件处理
+- [ ] 测试重复Webhook处理
+
+#### 测试 3.3.4: 会员状态测试
+- [ ] 测试会员激活
+- [ ] 测试会员过期检查
+- [ ] 测试配额更新
+
+**预计总工时**: 31小时
+
+---
+
+## 模块四：腾讯ADP接口集成
+
+### 4.1 功能概述
+集成腾讯云智能体开发平台（ADP）的对话接口，实现AI对话功能，支持流式响应。
+
+### 4.2 任务清单
+
+#### 任务 4.2.1: ADP配置
+- [ ] 在腾讯云ADP平台创建应用
+- [ ] 获取AppKey
+- [ ] 配置环境变量
+  - TENCENT_ADP_APP_KEY
+  - TENCENT_ADP_API_URL
+- [ ] 创建ADP配置文件 `/lib/adp-config.ts`
+
+**预计工时**: 2小时
+
+#### 任务 4.2.2: ADP Service实现
+- [ ] 创建 `/lib/services/adp.service.ts`
+- [ ] 实现会话管理
+  - 生成sessionId（UUID）
+  - 存储会话上下文
+- [ ] 实现SSE流式请求
+  - 发送POST请求到ADP接口
+  - 处理SSE事件流
+    - reply事件（模型回复）
+    - token_stat事件（Token统计）
+    - reference事件（参考来源）
+    - error事件（错误信息）
+- [ ] 实现消息处理
+  - 解析事件数据
+  - 累积流式响应
+  - 识别最终响应（is_final=true）
+- [ ] 错误处理和重试机制
+
+**预计工时**: 8小时
+
+#### 任务 4.2.3: ADP API端点
+- [ ] 创建 `/app/api/adp/chat/route.ts`
+- [ ] 实现POST请求处理
+  - 接收用户消息
+  - 生成或获取session_id
+  - 检查用户认证
+  - 检查配额
+- [ ] 实现SSE响应流
+  - 设置正确的响应头
+  ```typescript
+  headers: {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  }
+  ```
+  - 转发ADP的流式响应
+  - 格式化为SSE格式
+- [ ] 记录对话历史
+
+**预计工时**: 6小时
+
+#### 任务 4.2.4: 对话UI实现
+- [ ] 创建对话页面 `/app/(dashboard)/adp-chat/page.tsx`
+- [ ] 实现对话界面组件
+  - 消息列表（用户消息/AI消息）
+  - 输入框
+  - 发送按钮
+  - 清空对话按钮
+- [ ] 实现消息渲染
+  - Markdown支持
+  - 代码高亮
+  - 加载动画（打字效果）
+- [ ] 实现SSE客户端
+  ```typescript
+  const eventSource = new EventSource('/api/adp/chat');
+  eventSource.onmessage = (event) => {
+    // 处理消息
+  };
+  ```
+- [ ] 处理流式响应
+  - 逐字显示AI回复
+  - 显示思考中状态
+- [ ] 添加错误提示
+
+**预计工时**: 10小时
+
+#### 任务 4.2.5: 对话历史管理
+- [ ] 创建对话历史表（chat_history）
+  - id, user_id, session_id, message, role (user/assistant), created_at
+- [ ] 实现历史保存
+- [ ] 创建历史查询API `/app/api/adp/history/route.ts`
+- [ ] 实现历史对话列表
+- [ ] 实现对话恢复功能
+
+**预计工时**: 5小时
+
+#### 任务 4.2.6: 配额集成
+- [ ] 将ADP对话纳入配额系统
+- [ ] 每次对话消耗1次配额
+- [ ] 显示剩余配额
+- [ ] 配额不足时提示升级
+
+**预计工时**: 3小时
+
+### 4.3 单元测试任务
+
+#### 测试 4.3.1: ADP Service测试
+- [ ] 测试会话ID生成
+- [ ] 测试SSE请求发送
+- [ ] 测试事件解析
+- [ ] 测试错误处理
+
+#### 测试 4.3.2: API端点测试
+- [ ] 测试认证检查
+- [ ] 测试配额检查
+- [ ] 测试SSE响应流
+- [ ] 测试错误响应
+
+#### 测试 4.3.3: 前端组件测试
+- [ ] 测试消息发送
+- [ ] 测试流式响应接收
+- [ ] 测试Markdown渲染
+- [ ] 测试错误显示
+
+**预计总工时**: 34小时
+
+---
+
+## 跨模块任务
+
+### 5.1 系统集成
+- [ ] 统一错误处理机制
+- [ ] 统一日志记录
+- [ ] 统一API响应格式
+- [ ] 配置全局中间件
+
+**预计工时**: 6小时
+
+### 5.2 性能优化
+- [ ] 实现API限流
+- [ ] 添加Redis缓存（可选）
+- [ ] 优化数据库查询
+- [ ] 图片压缩和CDN
+
+**预计工时**: 8小时
+
+### 5.3 安全加固
+- [ ] 实现CSRF保护
+- [ ] 添加安全响应头
+- [ ] SQL注入防护审查
+- [ ] XSS防护审查
+- [ ] 敏感数据加密
+
+**预计工时**: 6小时
+
+### 5.4 部署准备
+- [ ] 配置生产环境变量
+- [ ] 创建部署文档
+- [ ] 配置CI/CD流程
+- [ ] 健康检查端点
+
+**预计工时**: 4小时
+
+---
+
+## 总计工时估算
+
+| 模块 | 开发工时 | 测试工时 | 小计 |
+|------|---------|---------|------|
+| 用户认证系统 | 28h | 8h | 36h |
+| Reddit检索功能 (Serper.dev) | 19h | 6h | 25h |
+| PayPal支付功能 | 31h | 10h | 41h |
+| 腾讯ADP集成 | 34h | 10h | 44h |
+| 跨模块任务 | 24h | - | 24h |
+| **总计** | **136h** | **34h** | **170h** |
+
+---
+
+## 质量标准
+
+### 代码质量
+- ✅ TypeScript严格模式，无any类型
+- ✅ ESLint无错误和警告
+- ✅ 代码注释覆盖率 > 30%
+- ✅ 函数复杂度 < 10
+
+### 测试覆盖率
+- ✅ 核心业务逻辑覆盖率 > 80%
+- ✅ API端点测试覆盖率 = 100%
+- ✅ 边界情况和错误处理测试完整
+
+### 性能指标
+- ✅ 页面首次加载 < 3s
+- ✅ API响应时间 < 500ms (P95)
+- ✅ SEO优化得分 > 90
+
+### 安全标准
+- ✅ OWASP Top 10 漏洞检查
+- ✅ 依赖安全扫描无高危漏洞
+- ✅ 敏感信息无泄露
+
+---
+
+## 里程碑
+
+| 里程碑 | 完成日期 | 交付物 |
+|--------|---------|--------|
+| M1: 用户认证系统 | Week 1-2 | 可用的登录注册系统 |
+| M2: Reddit检索功能 (Serper.dev) | Week 3 | 可搜索Reddit内容 |
+| M3: PayPal支付功能 | Week 4-5 | 可购买会员 |
+| M4: 腾讯ADP集成 | Week 6 | 可使用AI对话 |
+| M5: 系统集成与优化 | Week 7 | 完整可用系统 |
+| M6: 测试与部署 | Week 8 | 生产环境上线 |
+
+---
+
+**文档版本**: v1.0  
+**创建日期**: 2025-12-13  
+**最后更新**: 2025-12-13
