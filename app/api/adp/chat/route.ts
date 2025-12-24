@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
             }
 
             // 如果是最终回复，可以在这里保存对话历史
-            if (event.type === 'reply' && event.payload?.is_final) {
+            if (event.type === 'reply' && event.payload && 'is_final' in event.payload && event.payload.is_final) {
               console.log('[API] Final reply received, conversation complete');
             }
           }
