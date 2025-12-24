@@ -143,7 +143,7 @@ export class ADPService {
               const event: ADPChatResponse = JSON.parse(data);
               
               // 记录事件
-              if (event.type === 'reply' && event.payload) {
+              if (event.type === 'reply' && event.payload && 'content' in event.payload) {
                 console.log('[ADP] Reply event:', {
                   contentLength: event.payload.content?.length,
                   isFinal: event.payload.is_final,
@@ -199,7 +199,7 @@ export class ADPService {
     const messages: string[] = [];
 
     for await (const event of this.streamChat({ ...request, stream: 'enable' })) {
-      if (event.type === 'reply' && event.payload?.content) {
+      if (event.type === 'reply' && event.payload && 'content' in event.payload && event.payload.content) {
         messages.push(event.payload.content);
       } else if (event.type === 'error') {
         const errorMsg = ADP_ERROR_CODES[event.error?.code || -1] || event.error?.message || 'ADP API错误';

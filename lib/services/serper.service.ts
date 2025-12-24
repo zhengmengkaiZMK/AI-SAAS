@@ -166,7 +166,7 @@ export class SerperService {
         position: result.position || index + 1,
         domain: result.domain || 'reddit.com',
       };
-    }).filter(post => post.link); // 过滤掉没有链接的结果
+    }).filter((post: RedditPost) => post.link); // 过滤掉没有链接的结果
   }
 
   /**
