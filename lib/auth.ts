@@ -64,7 +64,7 @@ export const authOptions: NextAuthOptions = {
       // 用户首次登录时保存基本信息
       if (user) {
         token.id = user.id;
-        token.membershipType = user.membershipType;
+        token.membershipType = user.membershipType || "FREE";
       }
       
       // 当触发更新时或每次会话时,从数据库获取最新的membershipType
@@ -89,7 +89,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.membershipType = token.membershipType as string;
+        session.user.membershipType = (token.membershipType as string) || "FREE";
       }
       return session;
     },
