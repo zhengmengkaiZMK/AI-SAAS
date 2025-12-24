@@ -109,10 +109,8 @@ export async function GET(request: NextRequest) {
 function getQuotaLimits(membershipType: string): { searches: number; messages: number } {
   switch (membershipType) {
     case "PREMIUM":
-      return { searches: 100, messages: 500 };
-    case "ENTERPRISE":
-      return { searches: 1000, messages: 5000 };
+      return { searches: 999999, messages: 999999 }; // Professional: 无限制
     default: // FREE
-      return { searches: 3, messages: 10 };
+      return { searches: 3, messages: 10 }; // Free: 每日3次搜索
   }
 }

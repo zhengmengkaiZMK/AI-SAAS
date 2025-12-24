@@ -53,20 +53,13 @@ export function UserNav() {
     if (membershipType === "PREMIUM") {
       return (
         <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
-          {isZh ? "高级会员" : "Premium"}
-        </span>
-      );
-    }
-    if (membershipType === "ENTERPRISE") {
-      return (
-        <span className="px-2 py-0.5 text-xs rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400">
-          {isZh ? "企业版" : "Enterprise"}
+          {isZh ? "专业版" : "Professional"}
         </span>
       );
     }
     return (
       <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-        {isZh ? "免费用户" : "Free"}
+        {isZh ? "免费版" : "Free"}
       </span>
     );
   };

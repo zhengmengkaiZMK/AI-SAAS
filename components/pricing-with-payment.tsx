@@ -11,136 +11,65 @@ import { X } from "lucide-react";
 // 定义价格方案
 const pricingTiers = [
   {
-    id: "hobby",
-    name: "Hobby",
-    nameZh: "Hobby",
-    monthly: 4,
-    yearly: 30,
-    description: "Best for developers trying to use the platform.",
-    descriptionZh: "最适合尝试使用平台的开发者",
+    id: "free",
+    name: "Free",
+    nameZh: "免费版",
+    monthly: 0,
+    yearly: 0,
+    description: "Perfect for individuals trying out the platform and exploring user insights.",
+    descriptionZh: "适合个人试用和探索用户洞察",
     features: [
-      "5 API requests per day",
-      "Access to basic API endpoints",
+      "3 searches per day",
+      "Reddit & X platform support",
+      "10 pain points per search",
+      "Basic keyword analysis",
       "Email support within 48 hours",
-      "Community forum access",
-      "Monthly newsletter",
     ],
     featuresZh: [
-      "每日5次API请求",
-      "访问基础API端点",
+      "每日3次免费查询",
+      "支持 Reddit 和 X 平台",
+      "每次显示10条用户痛点",
+      "基础关键词分析",
       "48小时内邮件支持",
-      "社区论坛访问",
-      "月度时事通讯",
     ],
-    cta: "Browse Components",
-    ctaZh: "浏览组件",
+    cta: "Get Started",
+    ctaZh: "开始使用",
     featured: false,
-    showPayPal: true,
-  },
-  {
-    id: "starter",
-    name: "Starter",
-    nameZh: "Starter",
-    monthly: 8,
-    yearly: 60,
-    description: "Perfect for small businesses",
-    descriptionZh: "完美适合小型企业",
-    features: [
-      "Everything in Hobby, plus",
-      "50 API requests per day",
-      "Access to advanced API endpoints",
-      "Email support within 24 hours",
-      "Community forum access",
-      "Monthly newsletter",
-      "Self hosting options",
-    ],
-    featuresZh: [
-      "Hobby所有功能",
-      "每日50次API请求",
-      "访问高级API端点",
-      "24小时内邮件支持",
-      "社区论坛访问",
-      "月度时事通讯",
-      "自托管选项",
-    ],
-    cta: "Buy Now",
-    ctaZh: "立即购买",
-    featured: false,
-    showPayPal: true,
+    showPayPal: false, // Free套餐不显示PayPal
   },
   {
     id: "professional",
     name: "Professional",
-    nameZh: "Professional",
-    monthly: 12,
-    yearly: 100,
-    description: "Ideal for small to mid range startups",
-    descriptionZh: "适合中小型初创公司",
+    nameZh: "专业版",
+    monthly: 10,
+    yearly: 96,
+    originalYearly: 120, // 原价用于显示优惠
+    description: "Ideal for entrepreneurs, marketers, and researchers who need deep insights and unlimited access.",
+    descriptionZh: "适合创业者、市场人员和研究人员，需要深度洞察和无限访问",
     features: [
-      "Everything in Starter, plus",
-      "500 API requests per day",
-      "Access to super advanced API endpoints",
-      "Email support within 12 hours",
-      "Private Community access",
-      "Monthly retreats",
-      "Self hosting options",
-      "Private infrastructure",
-      "On-Prem deployments",
+      "Unlimited searches per day",
+      "All platforms support (Reddit, X, ProductHunt, HN, etc.)",
+      "20 pain points per search",
+      "AI-powered deep analysis & insights",
+      "Direct links to original posts",
+      "Export data (CSV/JSON)",
+      "Priority email support within 12 hours",
+      "Search history saved",
     ],
     featuresZh: [
-      "Starter所有功能",
-      "每日500次API请求",
-      "访问超级高级API端点",
-      "12小时内邮件支持",
-      "私有社区访问",
-      "月度聚会",
-      "自托管选项",
-      "私有基础设施",
-      "本地部署",
+      "每日不限次数查询",
+      "全平台支持（Reddit、X、ProductHunt、Hacker News等）",
+      "每次显示20条用户痛点",
+      "AI驱动的深度分析和洞察",
+      "可直接跳转痛点原帖地址",
+      "支持数据导出（CSV/JSON）",
+      "12小时内优先邮件支持",
+      "保存所有查询历史",
     ],
-    cta: "Buy Now",
-    ctaZh: "立即购买",
+    cta: "Subscribe Now",
+    ctaZh: "立即订阅",
     featured: true,
     showPayPal: true,
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    nameZh: "Enterprise",
-    monthly: null,
-    yearly: null,
-    priceDisplay: "Contact Us",
-    priceDisplayZh: "联系我们",
-    description: "Best for big fortune 500 companies.",
-    descriptionZh: "最适合大型500强企业",
-    features: [
-      "Everything in professional, plus",
-      "500K API requests per day",
-      "Access to super advanced API endpoints",
-      "Email support within 12 hours",
-      "Private Community access",
-      "Monthly retreats",
-      "Self hosting options",
-      "Private infrastructure",
-      "On-Prem deployments",
-      "I retweet your tweets personally",
-    ],
-    featuresZh: [
-      "Professional所有功能",
-      "每日50万次API请求",
-      "访问超级高级API端点",
-      "12小时内邮件支持",
-      "私有社区访问",
-      "月度聚会",
-      "自托管选项",
-      "私有基础设施",
-      "本地部署",
-      "我会亲自转发你的推文",
-    ],
-    cta: "Contact Us",
-    ctaZh: "联系我们",
-    featured: false,
-    showPayPal: false,
   },
 ];
 
@@ -158,8 +87,9 @@ export function PricingWithPayment() {
   ];
 
   const handlePlanClick = (tier: typeof pricingTiers[0]) => {
-    if (tier.id === "enterprise") {
-      router.push("mailto:support@example.com");
+    // Free套餐跳转到注册页面
+    if (tier.id === "free") {
+      router.push("/auth/signup");
       return;
     }
 
@@ -211,7 +141,7 @@ export function PricingWithPayment() {
         </div>
 
         {/* 价格卡片 */}
-        <div className="mx-auto mt-4 md:mt-20 grid relative z-20 grid-cols-1 gap-4 items-center md:grid-cols-2 xl:grid-cols-4">
+        <div className="mx-auto mt-4 md:mt-20 grid relative z-20 grid-cols-1 gap-6 items-stretch md:grid-cols-2 max-w-5xl">
           {pricingTiers.map((tier) => (
             <div
               key={tier.id}
@@ -243,14 +173,20 @@ export function PricingWithPayment() {
                       tier.featured ? "text-white" : "text-neutral-900 dark:text-neutral-200"
                     )}
                   >
-                    {tier.priceDisplay
-                      ? isZh
-                        ? tier.priceDisplayZh
-                        : tier.priceDisplay
+                    {tier.monthly === 0 
+                      ? (isZh ? "免费" : "Free")
                       : billingCycle === "monthly"
                       ? `$${tier.monthly}/mo`
                       : `$${tier.yearly}/yr`}
                   </motion.span>
+                  {billingCycle === "yearly" && tier.yearly > 0 && tier.originalYearly && (
+                    <span className={cn(
+                      "ml-2 text-sm line-through",
+                      tier.featured ? "text-neutral-400" : "text-neutral-500"
+                    )}>
+                      ${tier.originalYearly}/yr
+                    </span>
+                  )}
                 </p>
 
                 <p

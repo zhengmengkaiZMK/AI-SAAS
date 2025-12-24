@@ -3,11 +3,18 @@
  * 用于验证当前PayPal配置是否正确
  */
 
-import { config } from 'dotenv';
-import { resolve } from 'path';
+const dotenv = require('dotenv');
+const path = require('path');
+const fs = require('fs');
 
 // 加载 .env.local 文件
-config({ path: resolve(process.cwd(), '.env.local') });
+const envPath = path.resolve(process.cwd(), '.env.local');
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+} else {
+  console.error('❌ .env.local 文件不存在!');
+  process.exit(1);
+}
 
 function checkPayPalEnvironment() {
   console.log("\n🔍 检查PayPal环境配置...\n");
@@ -41,7 +48,7 @@ function checkPayPalEnvironment() {
     console.error("   ❌ PAYPAL_CLIENT_ID 未设置");
     hasError = true;
   } else {
-    const isSandbox = clientId.startsWith("sb-") || clientId.startsWith("AZ");
+    const isSandbox = clientId.startsWith("sb-") || clientId.startsWith("Aa") || clientId.startsWith("AZ");
     const isLive = clientId.startsWith("AX") || clientId.startsWith("AT");
     
     if (mode === "sandbox" && isSandbox) {
@@ -50,7 +57,7 @@ function checkPayPalEnvironment() {
       console.log(`   ✅ 生产Client ID: ${clientId.substring(0, 10)}...`);
     } else if (mode === "sandbox" && !isSandbox) {
       console.error(`   ❌ 模式是sandbox，但Client ID不是沙箱密钥`);
-      console.error(`   ℹ️  沙箱密钥通常以 sb- 或 AZ 开头`);
+      console.error(`   ℹ️  沙箱密钥通常以 sb-, Aa 或 AZ 开头`);
       hasError = true;
     } else if (mode === "live" && !isLive) {
       console.error(`   ❌ 模式是live，但Client ID不是生产密钥`);
@@ -65,10 +72,16 @@ function checkPayPalEnvironment() {
     console.error("   ❌ PAYPAL_CLIENT_SECRET 未设置");
     hasError = true;
   } else {
-    const isSandbox = clientSecret.startsWith("E");
-    const isLive = clientSecret.startsWith("E");
-    
     console.log(`   ✅ Secret已设置: ${clientSecret.substring(0, 5)}...`);
+    
+    // 检查Secret和Client ID是否相同(常见错误)
+    if (clientSecret === clientId) {
+      console.error("   ❌ Client Secret 和 Client ID 完全相同!");
+      console.error("   ℹ️  这是配置错误,它们应该是不同的值");
+      hasError = true;
+    } else {
+      console.log("   ✅ Secret与Client ID不同 (正确)");
+    }
     
     // 检查是否与Client ID匹配
     if (mode === "sandbox") {

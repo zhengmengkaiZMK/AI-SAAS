@@ -17,7 +17,7 @@
     "test:db": "tsx scripts/test-db.ts",
     "test:auth": "tsx scripts/test-auth.ts",
     "verify": "tsx scripts/verify-setup.ts",
-    "paypal:check": "tsx scripts/check-paypal-env.ts"
+    "paypal:check": "node scripts/check-paypal-env.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.4.2",

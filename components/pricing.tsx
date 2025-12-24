@@ -36,7 +36,7 @@ export function Pricing() {
           </button>
         ))}
       </div>
-      <div className="mx-auto mt-4 md:mt-20   grid relative z-20 grid-cols-1 gap-4 items-center  md:grid-cols-2 xl:grid-cols-4">
+      <div className="mx-auto mt-4 md:mt-20   grid relative z-20 grid-cols-1 gap-6 items-stretch  md:grid-cols-2 max-w-5xl">
         {tiers.map((tier, tierIdx) => (
           <div
             key={tier.id}

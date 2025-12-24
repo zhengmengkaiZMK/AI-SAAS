@@ -15,109 +15,44 @@ export function PricingTable({ pricing }: any) {
 
   const tableFeatures = [
     {
-      title: "Create APIs",
-      hobby: <CheckIcon />,
-      starter: <CheckIcon />,
+      title: "Daily Searches",
+      free: "3 searches",
+      professional: "Unlimited",
+    },
+    {
+      title: "Platform Support",
+      free: "Reddit & X",
+      professional: "All platforms",
+    },
+    {
+      title: "Pain Points per Search",
+      free: "10 points",
+      professional: "20 points",
+    },
+    {
+      title: "AI Deep Analysis",
+      free: "",
       professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
     },
     {
-      title: "Access to Dashboard",
-      hobby: <CheckIcon />,
-      starter: <CheckIcon />,
+      title: "Original Post Links",
+      free: "",
       professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
     },
     {
-      title: "Share functionality",
-      hobby: <CheckIcon />,
-      starter: <CheckIcon />,
+      title: "Data Export",
+      free: "",
       professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
     },
     {
-      title: "Playground Editor",
-      hobby: <CheckIcon />,
-      starter: <CheckIcon />,
+      title: "Search History",
+      free: "",
       professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
     },
     {
-      title: "Marketplace access",
-      hobby: <CheckIcon />,
-      starter: <CheckIcon />,
-      professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "On call support",
-      hobby: <CheckIcon />,
-      starter: <CheckIcon />,
-      professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "Developer Program",
-      starter: <CheckIcon />,
-      hobby: <CheckIcon />,
-      professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "Advanced Analytics",
-      hobby: "On demand",
-      starter: "If you ask nicely",
-      professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "Long running APIs",
-      hobby: "Probably never",
-      starter: "Nuh uh",
-      professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "Zero Downtime Guarantee",
-      hobby: "",
-      starter: "",
-      professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "Custom Analytics",
-      hobby: "",
-      starter: "",
-      professional: <CheckIcon />,
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "Single Sign On",
-      hobby: "",
-      starter: "",
-      professional: "",
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "Security certificate",
-      hobby: "",
-      starter: "",
-      professional: "",
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "Retweets from us",
-      hobby: "",
-      starter: "",
-      professional: "",
-      enterprise: <CheckIcon />,
-    },
-    {
-      title: "We send you flowers",
-      hobby: "",
-      starter: "",
-      professional: "",
-      enterprise: <CheckIcon />,
+      title: "Email Support",
+      free: "48 hours",
+      professional: "12 hours",
     },
   ];
 
@@ -151,16 +86,10 @@ export function PricingTable({ pricing }: any) {
                       {feature.title}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-muted dark:text-muted-dark text-center">
-                      {feature.hobby}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-muted dark:text-muted-dark text-center">
-                      {feature.starter}
+                      {feature.free}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-muted dark:text-muted-dark text-center">
                       {feature.professional}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-muted dark:text-muted-dark text-center">
-                      {feature.enterprise}
                     </td>
                   </tr>
                 ))}

@@ -231,12 +231,8 @@ export async function POST(request: NextRequest) {
 // 根据金额推断方案ID（临时方案，建议在订单元数据中存储）
 function inferPlanIdFromAmount(amount: number): string {
   const amountMap: Record<number, string> = {
-    4: "HOBBY_MONTHLY",
-    30: "HOBBY_YEARLY",
-    8: "STARTER_MONTHLY",
-    60: "STARTER_YEARLY",
-    12: "PROFESSIONAL_MONTHLY",
-    100: "PROFESSIONAL_YEARLY",
+    10: "PROFESSIONAL_MONTHLY",
+    96: "PROFESSIONAL_YEARLY",
   };
 
   return amountMap[amount] || "UNKNOWN";
@@ -246,10 +242,8 @@ function inferPlanIdFromAmount(amount: number): string {
 function getQuotaLimits(membershipType: string): { searches: number; messages: number } {
   switch (membershipType) {
     case "PREMIUM":
-      return { searches: 100, messages: 500 };
-    case "ENTERPRISE":
-      return { searches: 1000, messages: 5000 };
+      return { searches: 999999, messages: 999999 }; // Professional: 无限制
     default: // FREE
-      return { searches: 3, messages: 10 };
+      return { searches: 3, messages: 10 }; // Free: 每日3次搜索
   }
 }

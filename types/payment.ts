@@ -3,7 +3,7 @@
  */
 
 export type BillingCycle = "MONTHLY" | "YEARLY";
-export type PlanTier = "HOBBY" | "STARTER" | "PROFESSIONAL" | "ENTERPRISE";
+export type PlanTier = "FREE" | "PROFESSIONAL";
 
 // 价格方案配置
 export interface PricingPlan {

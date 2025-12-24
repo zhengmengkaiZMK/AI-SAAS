@@ -100,10 +100,8 @@ export function UserInfoCard({ user }: UserInfoCardProps) {
 function getMembershipLabel(type: string, isZh: boolean): string {
   switch (type) {
     case "PREMIUM":
-      return isZh ? "高级会员" : "Premium";
-    case "ENTERPRISE":
-      return isZh ? "企业版" : "Enterprise";
+      return isZh ? "专业版" : "Professional";
     default:
-      return isZh ? "免费用户" : "Free";
+      return isZh ? "免费版" : "Free";
   }
 }

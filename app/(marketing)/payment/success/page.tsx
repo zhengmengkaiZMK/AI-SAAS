@@ -56,15 +56,7 @@ function PaymentSuccessContent() {
       return (
         <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white">
           <Crown className="h-4 w-4 mr-1" />
-          Premium
-        </div>
-      );
-    }
-    if (type === "ENTERPRISE") {
-      return (
-        <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-          <Crown className="h-4 w-4 mr-1" />
-          Enterprise
+          {isZh ? "专业版" : "Professional"}
         </div>
       );
     }

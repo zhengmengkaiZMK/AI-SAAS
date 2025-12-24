@@ -19,31 +19,23 @@ export function MembershipCard({
 
   const isFree = membershipType === "FREE";
   const isPremium = membershipType === "PREMIUM";
-  const isEnterprise = membershipType === "ENTERPRISE";
 
   const config = {
     FREE: {
-      title: isZh ? "免费计划" : "Free Plan",
+      title: isZh ? "免费版" : "Free Plan",
       description: isZh
-        ? "升级以解锁更多功能"
-        : "Upgrade to unlock more features",
+        ? "升级到专业版以解锁更多功能"
+        : "Upgrade to Professional for more features",
       bgColor: "bg-gray-100 dark:bg-gray-800",
       textColor: "text-gray-600 dark:text-gray-400",
       iconColor: "text-gray-500",
     },
     PREMIUM: {
-      title: isZh ? "高级会员" : "Premium",
-      description: isZh ? "享受高级功能" : "Enjoy premium features",
+      title: isZh ? "专业版" : "Professional",
+      description: isZh ? "享受无限访问和深度分析" : "Enjoy unlimited access and deep insights",
       bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
       textColor: "text-yellow-800 dark:text-yellow-400",
       iconColor: "text-yellow-600 dark:text-yellow-400",
-    },
-    ENTERPRISE: {
-      title: isZh ? "企业版" : "Enterprise",
-      description: isZh ? "全部功能无限制" : "Unlimited everything",
-      bgColor: "bg-purple-100 dark:bg-purple-900/30",
-      textColor: "text-purple-800 dark:text-purple-400",
-      iconColor: "text-purple-600 dark:text-purple-400",
     },
   };
 
@@ -72,14 +64,10 @@ export function MembershipCard({
           text={
             isFree
               ? isZh
-                ? "3 次搜索/天"
+                ? "每日3次查询"
                 : "3 searches/day"
-              : isPremium
-              ? isZh
-                ? "100 次搜索/天"
-                : "100 searches/day"
               : isZh
-              ? "无限搜索"
+              ? "无限次查询"
               : "Unlimited searches"
           }
         />
@@ -87,24 +75,34 @@ export function MembershipCard({
           text={
             isFree
               ? isZh
-                ? "10 条消息/天"
-                : "10 messages/day"
-              : isPremium
-              ? isZh
-                ? "500 条消息/天"
-                : "500 messages/day"
+                ? "显示10条痛点"
+                : "10 pain points/search"
               : isZh
-              ? "无限消息"
-              : "Unlimited messages"
+              ? "显示20条痛点"
+              : "20 pain points/search"
+          }
+        />
+        <BenefitItem
+          text={
+            isFree
+              ? isZh
+                ? "Reddit & X 平台"
+                : "Reddit & X platforms"
+              : isZh
+              ? "全平台支持"
+              : "All platforms"
           }
         />
         {!isFree && (
           <>
             <BenefitItem
-              text={isZh ? "优先支持" : "Priority support"}
+              text={isZh ? "AI深度分析" : "AI deep analysis"}
             />
             <BenefitItem
-              text={isZh ? "历史记录保存" : "History saved"}
+              text={isZh ? "数据导出" : "Data export"}
+            />
+            <BenefitItem
+              text={isZh ? "查询历史" : "Search history"}
             />
           </>
         )}
