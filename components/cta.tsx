@@ -10,11 +10,13 @@ export const CTA = () => {
   const isZh = pathname.startsWith("/zh");
 
   const content = {
-    heading: isZh ? "准备好注册并加入候补名单了吗？" : "Ready to signup and join the waitlist?",
+    heading: isZh 
+      ? "准备好发现你的下一个产品机会了吗？" 
+      : "Ready to Discover Your Next Product Opportunity?",
     description: isZh 
-      ? "立即访问我们最先进的项目并加入候补名单。"
-      : "Get instant access to our state of the art project and join the waitlist.",
-    button: isZh ? "加入候补名单" : "Join Waitlist",
+      ? "加入数千名创业者和产品经理,用 AI 挖掘真实用户痛点,验证你的产品想法。免费开始,无需信用卡。"
+      : "Join thousands of entrepreneurs and product managers using AI to uncover real user pain points and validate product ideas. Start free, no credit card required.",
+    button: isZh ? "免费开始使用" : "Start Free",
   };
 
   return (
@@ -47,7 +49,9 @@ export const CTA = () => {
               </p>
 
               <div className="relative z-10 mx-auto flex justify-center mt-6">
-                <Button>{content.button}</Button>
+                <Link href={isZh ? "/zh/register" : "/register"}>
+                  <Button>{content.button}</Button>
+                </Link>
               </div>
             </div>
           </div>

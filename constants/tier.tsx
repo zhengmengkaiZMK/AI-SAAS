@@ -20,7 +20,7 @@ export const tiers: Tier[] = [
     priceYearly: "$0",
     description: "Perfect for individuals trying out the platform and exploring user insights.",
     features: [
-      "3 searches per day",
+      "5 searches per day",
       "Reddit & X platform support",
       "10 pain points per search",
       "Basic keyword analysis",

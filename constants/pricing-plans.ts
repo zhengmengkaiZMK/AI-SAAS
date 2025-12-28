@@ -18,14 +18,14 @@ export const PRICING_PLANS: Record<string, PricingPlan> = {
     membershipType: "FREE",
     durationDays: 9999, // 永久有效
     features: [
-      "3 searches per day",
+      "5 searches per day",
       "Reddit & X platform support",
       "10 pain points per search",
       "Basic keyword analysis",
       "Email support within 48 hours",
     ],
     featuresZh: [
-      "每日3次免费查询",
+      "每日5次免费查询",
       "支持 Reddit 和 X 平台",
       "每次显示10条用户痛点",
       "基础关键词分析",

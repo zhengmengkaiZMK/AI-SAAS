@@ -16,7 +16,7 @@ export function PricingTable({ pricing }: any) {
   const tableFeatures = [
     {
       title: "Daily Searches",
-      free: "3 searches",
+      free: "5 searches",
       professional: "Unlimited",
     },
     {

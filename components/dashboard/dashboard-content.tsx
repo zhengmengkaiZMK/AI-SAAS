@@ -123,10 +123,10 @@ export function DashboardContent() {
         </div>
       )}
 
-      {/* 使用统计 */}
-      {userStats && (
+      {/* 使用统计 - 已隐藏 */}
+      {/* {userStats && (
         <ActivityChart totalSearches={userStats.totalSearches} />
-      )}
+      )} */}
     </div>
   );
 }

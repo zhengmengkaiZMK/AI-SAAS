@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { clearGuestUsage } from "@/lib/usage-tracker";
 
 export function UserNav() {
   const { data: session, status } = useSession();
@@ -89,18 +90,22 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard">{isZh ? "仪表板" : "Dashboard"}</Link>
+          <Link href={isZh ? "/zh/dashboard" : "/dashboard"}>{isZh ? "仪表板" : "Dashboard"}</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/pricing">{isZh ? "升级会员" : "Upgrade"}</Link>
+          <Link href={isZh ? "/zh/pricing" : "/pricing"}>{isZh ? "升级会员" : "Upgrade"}</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings">{isZh ? "设置" : "Settings"}</Link>
+          <Link href={isZh ? "/zh/settings" : "/settings"}>{isZh ? "设置" : "Settings"}</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer text-red-600 dark:text-red-400"
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={() => {
+            // 退出登录时清除游客使用记录，让用户可以重新开始
+            clearGuestUsage();
+            signOut({ callbackUrl: "/" });
+          }}
         >
           {isZh ? "退出登录" : "Sign Out"}
         </DropdownMenuItem>

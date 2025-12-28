@@ -16,6 +16,7 @@ interface Insight {
   quote: string | null;
   quoteAuthor?: string;
   quoteLink?: string;
+  quotePlatform?: 'reddit' | 'x'; // 添加平台标识
 }
 
 interface AnalysisData {
@@ -30,20 +31,25 @@ interface RedditPost {
   snippet: string;
   date?: string;
   subreddit?: string;
+  platform?: 'reddit' | 'x'; // 新增：平台标识
 }
 
 interface PainPointResultsProps {
   data: AnalysisData;
-  redditPosts?: RedditPost[];
+  redditPosts?: RedditPost[]; // 保持向后兼容
+  xPosts?: RedditPost[]; // 新增：X平台帖子
   onClose?: () => void;
   query?: string; // 添加搜索关键词
 }
 
-export const PainPointResults = ({ data, redditPosts = [], onClose, query }: PainPointResultsProps) => {
+export const PainPointResults = ({ data, redditPosts = [], xPosts = [], onClose, query }: PainPointResultsProps) => {
   const pathname = usePathname();
   const isZh = pathname.startsWith("/zh");
   const [copySuccess, setCopySuccess] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  
+  // 合并所有帖子用于匹配引用
+  const allPosts = [...redditPosts, ...(xPosts || [])];
   
   const content = {
     summaryTitle: isZh ? "执行摘要" : "Executive Summary",
@@ -52,13 +58,14 @@ export const PainPointResults = ({ data, redditPosts = [], onClose, query }: Pai
     opportunityLabel: isZh ? "💡 商机建议" : "💡 Opportunity",
     userQuoteLabel: isZh ? "用户原声" : "User Quote",
     viewOnReddit: isZh ? "在 Reddit 查看" : "View on Reddit",
+    viewOnX: isZh ? "在 X 查看" : "View on X",
     copyReport: isZh ? "复制报告" : "Copy Report",
     copySuccess: isZh ? "已复制！" : "Copied!",
     copyError: isZh ? "复制失败，请重试" : "Copy failed, please retry",
     exportPdf: isZh ? "导出 PDF" : "Export to PDF",
     exporting: isZh ? "导出中..." : "Exporting...",
     exportTip: isZh 
-      ? "点击后将直接弹出文件保存对话框，选择保存位置即可" 
+      ? "点击后将直接弹出文件保存对话框,选择保存位置即可" 
       : "Click to save the PDF file directly to your chosen location",
     severityHigh: isZh ? "高严重性" : "High Severity",
     severityMedium: isZh ? "中等严重性" : "Medium Severity",
@@ -113,23 +120,39 @@ export const PainPointResults = ({ data, redditPosts = [], onClose, query }: Pai
     }
   };
 
-  // 尝试从Reddit帖子中匹配quote和链接
+  // 尝试从所有帖子中匹配quote和链接
   const enrichInsights = () => {
     return data.insights.map(insight => {
       // 如果insight已经有链接，直接返回
       if (insight.quoteLink) return insight;
 
-      // 尝试在Reddit帖子中找到匹配的quote
-      if (insight.quote && redditPosts.length > 0) {
-        const matchingPost = redditPosts.find(post => 
+      // 尝试在所有帖子中找到匹配的quote
+      if (insight.quote && allPosts.length > 0) {
+        const matchingPost = allPosts.find(post => 
           post.snippet.toLowerCase().includes(insight.quote!.toLowerCase().substring(0, 30))
         );
         
         if (matchingPost) {
+          // 根据平台确定作者显示
+          let author = 'User';
+          let platform: 'reddit' | 'x' = 'reddit';
+          
+          if (matchingPost.platform === 'reddit' && matchingPost.subreddit) {
+            author = `r/${matchingPost.subreddit}`;
+            platform = 'reddit';
+          } else if (matchingPost.platform === 'x') {
+            author = 'X User';
+            platform = 'x';
+          } else if (matchingPost.subreddit) {
+            author = `r/${matchingPost.subreddit}`;
+            platform = 'reddit';
+          }
+          
           return {
             ...insight,
             quoteLink: matchingPost.link,
-            quoteAuthor: matchingPost.subreddit ? `r/${matchingPost.subreddit}` : 'Reddit User',
+            quoteAuthor: author,
+            quotePlatform: platform, // 添加平台信息
           };
         }
       }
@@ -248,7 +271,7 @@ export const PainPointResults = ({ data, redditPosts = [], onClose, query }: Pai
                   </blockquote>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-neutral-500 dark:text-neutral-500">
-                      {insight.quoteAuthor ? `— ${insight.quoteAuthor}` : '— Reddit User'}
+                      {insight.quoteAuthor ? `— ${insight.quoteAuthor}` : '— User'}
                     </span>
                     {insight.quoteLink && (
                       <a
@@ -257,7 +280,7 @@ export const PainPointResults = ({ data, redditPosts = [], onClose, query }: Pai
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors"
                       >
-                        {content.viewOnReddit}
+                        {insight.quotePlatform === 'x' ? content.viewOnX : content.viewOnReddit}
                         <IconExternalLink className="h-3 w-3" />
                       </a>
                     )}

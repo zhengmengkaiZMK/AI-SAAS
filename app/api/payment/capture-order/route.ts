@@ -244,6 +244,6 @@ function getQuotaLimits(membershipType: string): { searches: number; messages: n
     case "PREMIUM":
       return { searches: 999999, messages: 999999 }; // Professional: 无限制
     default: // FREE
-      return { searches: 3, messages: 10 }; // Free: 每日3次搜索
+      return { searches: 5, messages: 10 }; // Free: 每日5次搜索
   }
 }

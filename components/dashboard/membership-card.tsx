@@ -64,14 +64,15 @@ export function MembershipCard({
           text={
             isFree
               ? isZh
-                ? "每日3次查询"
-                : "3 searches/day"
+                ? "每日5次查询"
+                : "5 searches/day"
               : isZh
               ? "无限次查询"
               : "Unlimited searches"
           }
         />
-        <BenefitItem
+        {/* 痛点显示数量 - 已隐藏 */}
+        {/* <BenefitItem
           text={
             isFree
               ? isZh
@@ -81,7 +82,7 @@ export function MembershipCard({
               ? "显示20条痛点"
               : "20 pain points/search"
           }
-        />
+        /> */}
         <BenefitItem
           text={
             isFree

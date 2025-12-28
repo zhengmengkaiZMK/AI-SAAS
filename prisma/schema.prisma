@@ -93,7 +93,7 @@ model UserQuota {
   
   // Reddit搜索配额
   searchesUsed  Int      @default(0) @map("searches_used")
-  searchesLimit Int      @default(3) @map("searches_limit")
+  searchesLimit Int      @default(5) @map("searches_limit")
   
   // ADP对话配额
   messagesUsed  Int      @default(0) @map("messages_used")

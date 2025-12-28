@@ -14,10 +14,6 @@ export const Footer = () => {
       href: isZh ? "/zh/pricing" : "/pricing",
     },
     {
-      name: isZh ? "博客" : "Blog",
-      href: isZh ? "/zh/blog" : "/blog",
-    },
-    {
       name: isZh ? "联系我们" : "Contact",
       href: isZh ? "/zh/contact" : "/contact",
     },
@@ -31,26 +27,7 @@ export const Footer = () => {
       name: isZh ? "服务条款" : "Terms of Service",
       href: "#",
     },
-    {
-      name: isZh ? "退款政策" : "Refund Policy",
-      href: "#",
-    },
   ];
-  const socials = [
-    {
-      name: "Twitter",
-      href: "https://twitter.com/mannupaaji",
-    },
-    {
-      name: "LinkedIn",
-      href: "https://linkedin.com/in/manuarora28",
-    },
-    {
-      name: "GitHub",
-      href: "https://github.com/manuarora700",
-    },
-  ];
-
   return (
     <div className="relative">
       <div className="border-t border-neutral-100  dark:border-neutral-800 px-8 pt-20 pb-32 relative bg-white dark:bg-black">
@@ -59,10 +36,10 @@ export const Footer = () => {
             <div className="mr-4  md:flex mb-4">
               <Logo />
             </div>
-            <div>{isZh ? "版权所有" : "Copyright"} &copy; 2025 Every Labs</div>
+            <div>{isZh ? "版权所有" : "Copyright"} &copy; 2025 SaltMine</div>
             <div className="mt-2">{isZh ? "保留所有权利" : "All rights reserved"}</div>
           </div>
-          <div className="grid grid-cols-3 gap-10 items-start mt-10 md:mt-0">
+          <div className="grid grid-cols-2 gap-10 items-start mt-10 md:mt-0">
             <div className="flex justify-center space-y-4 flex-col mt-4">
               {links.map((link) => (
                 <Link
@@ -76,17 +53,6 @@ export const Footer = () => {
             </div>
             <div className="flex justify-center space-y-4 flex-col mt-4">
               {legal.map((link) => (
-                <Link
-                  key={link.name}
-                  className="transition-colors hover:text-black text-muted dark:text-muted-dark dark:hover:text-neutral-400 text-xs sm:text-sm"
-                  href={link.href}
-                >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-            <div className="flex justify-center space-y-4 flex-col mt-4">
-              {socials.map((link) => (
                 <Link
                   key={link.name}
                   className="transition-colors hover:text-black text-muted dark:text-muted-dark dark:hover:text-neutral-400 text-xs sm:text-sm"

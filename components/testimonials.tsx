@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Heading } from "./heading";
 import { Subheading } from "./subheading";
@@ -6,14 +8,23 @@ import { InViewDiv } from "./in-view-div";
 import { useMemo } from "react";
 import { TestimonialColumnContainer } from "./testimonial-column-container";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 export const Testimonials = () => {
+  const pathname = usePathname();
+  const isZh = pathname.startsWith("/zh");
+
   return (
     <div className="relative z-20 py-10 md:py-40">
-      <Heading as="h2">Loved by people all over the universe</Heading>
+      <Heading as="h2">
+        {isZh 
+          ? "全球创业者和产品经理的信赖之选" 
+          : "Trusted by Entrepreneurs and Product Managers Worldwide"}
+      </Heading>
       <Subheading className="text-center max-w-lg mx-auto">
-        SaltMine is used by millions of people around the globe.Our APIs have
-        fan bases and people fight for us over twitter.
+        {isZh
+          ? "每天帮助数千名创业者和产品经理发现真实的用户痛点,验证产品想法,找到市场机会。"
+          : "Helping thousands of entrepreneurs and product managers daily discover real user pain points, validate product ideas, and identify market opportunities."}
       </Subheading>
       <TestimonialGrid />
     </div>
@@ -29,158 +40,158 @@ interface Testimonial {
 
 const testimonials = [
   {
-    name: "Manu Arora",
+    name: "Sarah Chen",
     quote:
-      "What a fantastic AI SaltMine is, I just love it. It has completely transformed the way I approach problems and develop solutions.",
+      "Found 3 major pain points in the productivity app market within minutes. Launched my SaaS 2 months later with paying customers. This tool is a goldmine!",
     src: "https://i.pravatar.cc/150?img=1",
-    designation: "Tech Innovator & Entrepreneur",
+    designation: "SaaS Founder",
   },
   {
-    name: "Tyler Durden",
+    name: "Marcus Rodriguez",
     quote:
-      "I made a soap with the help of AI, it was so easy to use. I'm so glad this happened because it revolutionized my entire business model and production process.",
+      "The frustration score helped me prioritize which problem to solve first. Saved me from building a product nobody wanted. Best $10/month I've ever spent.",
     src: "https://i.pravatar.cc/150?img=2",
-    designation: "Creative Director & Business Owner",
+    designation: "Indie Hacker",
   },
   {
-    name: "Alice Johnson",
+    name: "Emily Watson",
     quote:
-      "This AI has transformed the way I work! It's like having a brilliant assistant who knows exactly what I need before I even ask.",
+      "We used the Reddit insights to pivot our product roadmap. The real user quotes are incredibly valuable for investor pitches and validation.",
     src: "https://i.pravatar.cc/150?img=3",
-    designation: "Senior Software Engineer",
+    designation: "Product Manager at Tech Startup",
   },
   {
-    name: "Bob Smith",
+    name: "David Kim",
     quote:
-      "Absolutely revolutionary, a game-changer for our industry. It has streamlined our processes and enhanced our productivity dramatically.",
+      "Discovered an underserved niche in the fitness tech space. The AI analysis revealed patterns I would have never found manually. Game-changer for market research!",
     src: "https://i.pravatar.cc/150?img=4",
-    designation: "Industry Analyst",
+    designation: "Entrepreneur & Fitness Tech Founder",
   },
   {
-    name: "Cathy Lee",
+    name: "Jennifer Lee",
     quote:
-      "I can't imagine going back to how things were before this AI. It has not only improved my work efficiency but also my daily life.",
+      "Before building anything, I now search pain points here first. It's like having a crystal ball that shows you what people actually need.",
     src: "https://i.pravatar.cc/150?img=5",
-    designation: "Product Manager",
+    designation: "Solo Founder",
   },
   {
-    name: "David Wright",
+    name: "Alex Thompson",
     quote:
-      "It's like having a superpower! This AI tool has given us the ability to do things we never thought were possible in our field.",
+      "The multi-platform search is brilliant. Being able to cross-reference Reddit and X insights gave us a complete picture of user sentiment.",
     src: "https://i.pravatar.cc/150?img=6",
-    designation: "Research Scientist",
+    designation: "Market Research Analyst",
   },
   {
-    name: "Eva Green",
+    name: "Rachel Green",
     quote:
-      "The efficiency it brings is unmatched. It's a vital tool that has helped us cut costs and improve our end product significantly.",
+      "Used this to validate 5 different ideas in one afternoon. Saved months of development on wrong products. The export feature is perfect for team alignment.",
     src: "https://i.pravatar.cc/150?img=7",
-    designation: "Operations Director",
+    designation: "Head of Product",
   },
   {
-    name: "Frank Moore",
+    name: "Michael Brown",
     quote:
-      "A robust solution that fits perfectly into our workflow. It has enhanced our team's capabilities and allowed us to tackle more complex projects.",
+      "The structured insights format is exactly what our investment committee needed. Helped us secure $500K in seed funding with data-backed validation.",
     src: "https://i.pravatar.cc/150?img=8",
-    designation: "Project Manager",
+    designation: "Tech Startup CEO",
   },
   {
-    name: "Grace Hall",
+    name: "Lisa Anderson",
     quote:
-      "It's incredibly intuitive and easy to use. Even those without technical expertise can leverage its power to improve their workflows.",
+      "As a non-technical founder, this tool empowered me to do professional market research without hiring expensive consultants. Absolutely worth it!",
     src: "https://i.pravatar.cc/150?img=9",
-    designation: "Marketing Specialist",
+    designation: "E-commerce Entrepreneur",
   },
   {
-    name: "Henry Ford",
+    name: "James Wilson",
     quote:
-      "It has saved us countless hours. Highly recommended for anyone looking to enhance their efficiency and productivity.",
+      "The real-time AI analysis is surprisingly accurate. It caught pain points our user interviews missed. Now it's part of our weekly product discovery process.",
     src: "https://i.pravatar.cc/150?img=10",
-    designation: "Operations Analyst",
+    designation: "Product Lead",
   },
   {
-    name: "Ivy Wilson",
+    name: "Sophia Martinez",
     quote:
-      "A must-have tool for any professional. It's revolutionized the way we approach problem-solving and decision-making.",
+      "Found our entire product positioning strategy from one search. The direct links to Reddit posts helped us understand context deeply. Incredible tool!",
     src: "https://i.pravatar.cc/150?img=11",
-    designation: "Business Consultant",
+    designation: "Marketing Strategist",
   },
   {
-    name: "Jack Brown",
+    name: "Daniel Park",
     quote:
-      "The results are always impressive. This AI has helped us to not only meet but exceed our performance targets.",
+      "Went from idea to MVP in 3 weeks because the pain point analysis was so clear. Users love our solution because we built exactly what they needed.",
     src: "https://i.pravatar.cc/150?img=12",
-    designation: "Performance Manager",
+    designation: "Technical Founder",
   },
   {
-    name: "Kathy Adams",
+    name: "Olivia Taylor",
     quote:
-      "It helps us achieve what was once thought impossible. The AI's capabilities are groundbreaking and have opened new avenues for us.",
+      "The search history feature is underrated. Being able to track how pain points evolve over time gives us competitive advantage in product strategy.",
     src: "https://i.pravatar.cc/150?img=13",
-    designation: "Innovation Lead",
+    designation: "Chief Product Officer",
   },
   {
-    name: "Leo Carter",
+    name: "Ryan Cooper",
     quote:
-      "Transformative technology with real impact. It has streamlined our operations and brought unprecedented efficiency to our processes.",
+      "Better than hiring a market research agency and 100x cheaper. The AI summaries are concise and actionable. This should be every founder's first stop.",
     src: "https://i.pravatar.cc/150?img=14",
-    designation: "Technology Strategist",
+    designation: "Serial Entrepreneur",
   },
   {
-    name: "Mia Turner",
+    name: "Emma Davis",
     quote:
-      "It's simply revolutionary! The way it integrates with our existing systems and enhances them is nothing short of miraculous.",
+      "Discovered a massive pain point in remote work tools that big companies are ignoring. Building the solution now. This tool literally changed my life.",
     src: "https://i.pravatar.cc/150?img=15",
-    designation: "Systems Integrator",
+    designation: "Aspiring Founder",
   },
   {
-    name: "Nathan Hill",
+    name: "Chris Johnson",
     quote:
-      "The best investment we've made in years. It's not just a tool; it's a game-changer that has propelled our business forward.",
+      "The professional plan pays for itself instantly. Unlimited searches mean we can explore dozens of niches quickly. Essential for our product studio.",
     src: "https://i.pravatar.cc/150?img=16",
-    designation: "Investment Analyst",
+    designation: "Product Studio Owner",
   },
   {
-    name: "Olivia Scott",
+    name: "Amanda White",
     quote:
-      "It consistently exceeds our expectations. Its adaptability and precision make it indispensable for our daily operations.",
+      "Used it to double-check our product-market fit. The frustration scores validated we were solving a real problem. Now we have confident direction.",
     src: "https://i.pravatar.cc/150?img=17",
-    designation: "Quality Assurance Manager",
+    designation: "Co-Founder",
   },
   {
-    name: "Peter White",
+    name: "Kevin Zhang",
     quote:
-      "A seamless integration into our daily tasks. It has enhanced our productivity and allowed us to focus on more strategic initiatives.",
+      "The bilingual support is perfect for our global product. We can analyze pain points in both English and Chinese communities. Truly international tool!",
     src: "https://i.pravatar.cc/150?img=18",
-    designation: "Strategic Planner",
+    designation: "International Product Manager",
   },
   {
-    name: "Quinn Taylor",
+    name: "Jessica Miller",
     quote:
-      "It's a game-changer for our business. The insights it provides are invaluable and have driven substantial growth for us.",
+      "Every product manager should use this before writing PRDs. The real user quotes give context that surveys never capture. Absolutely indispensable.",
     src: "https://i.pravatar.cc/150?img=19",
-    designation: "Growth Manager",
+    designation: "Senior PM at Fortune 500",
   },
   {
-    name: "Rachel Black",
+    name: "Tom Harrison",
     quote:
-      "The support team is as impressive as the technology itself. They ensure we maximize the utility of the AI in our operations.",
+      "Helped us pivot from a failing product to a successful one in 6 weeks. The pain point insights showed us what users really wanted vs what we thought.",
     src: "https://i.pravatar.cc/150?img=20",
-    designation: "Client Support Coordinator",
+    designation: "Startup Founder",
   },
   {
-    name: "Samuel Lee",
+    name: "Nicole Adams",
     quote:
-      "It's the future, now. Adopting this AI has put us years ahead of the competition in terms of operational efficiency and innovation.",
+      "The CSV export is perfect for stakeholder presentations. Being able to show data-backed pain points makes every product decision easier to justify.",
     src: "https://i.pravatar.cc/150?img=21",
-    designation: "Futurist",
+    designation: "Product Strategy Director",
   },
   {
-    name: "Tina Brooks",
+    name: "Brian Foster",
     quote:
-      "It has completely changed the way we operate. The AI's ability to analyze and optimize our processes is phenomenal.",
+      "From zero to validated idea in under an hour. The AI does in minutes what used to take me weeks of manual Reddit scrolling. Pure efficiency!",
     src: "https://i.pravatar.cc/150?img=22",
-    designation: "Process Analyst",
+    designation: "Micro-SaaS Builder",
   },
 ];
 

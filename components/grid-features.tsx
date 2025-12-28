@@ -1,61 +1,78 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import {
-  IconAdjustmentsBolt,
-  IconCloud,
+  IconBrain,
+  IconSearch,
+  IconChartBar,
+  IconDeviceAnalytics,
+  IconWorldWww,
   IconCurrencyDollar,
-  IconEaseInOut,
-  IconHeart,
-  IconHelp,
-  IconRouteAltLeft,
-  IconTerminal2,
+  IconFileDownload,
+  IconTrendingUp,
 } from "@tabler/icons-react";
+import { usePathname } from "next/navigation";
 
 export const GridFeatures = () => {
+  const pathname = usePathname();
+  const isZh = pathname.startsWith("/zh");
+
   const features = [
     {
-      title: "Built for developers",
-      description:
-        "Built for engineers, developers, dreamers, thinkers and doers.",
-      icon: <IconTerminal2 />,
+      title: isZh ? "AI 智能分析" : "AI-Powered Analysis",
+      description: isZh
+        ? "先进的 AI 技术自动分析 Reddit 讨论,挖掘隐藏的用户痛点和产品机会。"
+        : "Advanced AI technology automatically analyzes Reddit discussions to uncover hidden user pain points and product opportunities.",
+      icon: <IconBrain />,
     },
     {
-      title: "Ease of use",
-      description:
-        "It's as easy as using an Apple, and as expensive as buying one.",
-      icon: <IconEaseInOut />,
+      title: isZh ? "实时搜索引擎" : "Real-Time Search",
+      description: isZh
+        ? "即时搜索 Reddit、X 等多个平台,获取最新鲜的用户反馈和讨论。"
+        : "Instant search across Reddit, X, and multiple platforms for the freshest user feedback and discussions.",
+      icon: <IconSearch />,
     },
     {
-      title: "Pricing like no other",
-      description:
-        "Our prices are best in the market. No cap, no lock, no credit card required.",
+      title: isZh ? "愤怒指数评分" : "Frustration Score",
+      description: isZh
+        ? "独创 0-100 分愤怒指数,量化用户痛点严重程度,精准识别产品机会。"
+        : "Unique 0-100 frustration scoring system to quantify pain point severity and identify product opportunities.",
+      icon: <IconChartBar />,
+    },
+    {
+      title: isZh ? "结构化洞察报告" : "Structured Insights",
+      description: isZh
+        ? "生成包含摘要、痛点详情和真实引用的专业分析报告,助力数据驱动决策。"
+        : "Generate professional analysis reports with summaries, detailed pain points, and real user quotes for data-driven decisions.",
+      icon: <IconDeviceAnalytics />,
+    },
+    {
+      title: isZh ? "多平台覆盖" : "Multi-Platform Support",
+      description: isZh
+        ? "支持 Reddit、X、Product Hunt、Hacker News 等主流社区平台。"
+        : "Support for major platforms including Reddit, X, Product Hunt, and Hacker News.",
+      icon: <IconWorldWww />,
+    },
+    {
+      title: isZh ? "灵活定价方案" : "Flexible Pricing",
+      description: isZh
+        ? "免费版每日 5 次查询,专业版无限使用。月付/年付灵活选择,年付享 8 折优惠。"
+        : "Free plan with 3 daily queries, professional plan with unlimited access. Monthly or annual billing with 20% off for annual plans.",
       icon: <IconCurrencyDollar />,
     },
     {
-      title: "100% Uptime guarantee",
-      description: "We just cannot be taken down by anyone.",
-      icon: <IconCloud />,
+      title: isZh ? "导出与分享" : "Export & Share",
+      description: isZh
+        ? "专业版支持导出 CSV/JSON 格式报告,轻松与团队分享洞察成果。"
+        : "Professional plan includes CSV/JSON export functionality to easily share insights with your team.",
+      icon: <IconFileDownload />,
     },
     {
-      title: "Multi-tenant Architecture",
-      description: "You can simply share passwords instead of buying new seats",
-      icon: <IconRouteAltLeft />,
-    },
-    {
-      title: "24/7 Customer Support",
-      description:
-        "We are available a 100% of the time. Atleast our AI Agents are.",
-      icon: <IconHelp />,
-    },
-    {
-      title: "Money back guarantee",
-      description:
-        "If you donot like SaltMine, we will convince you to like us.",
-      icon: <IconAdjustmentsBolt />,
-    },
-    {
-      title: "And everything else",
-      description: "I just ran out of copy ideas. Accept my sincere apologies",
-      icon: <IconHeart />,
+      title: isZh ? "搜索历史管理" : "Search History",
+      description: isZh
+        ? "自动保存所有搜索历史,随时查看过往分析,追踪痛点变化趋势。"
+        : "Automatically save all search history, review past analyses anytime, and track pain point trends over time.",
+      icon: <IconTrendingUp />,
     },
   ];
   return (

@@ -18,14 +18,6 @@ export function NavBar({ navItems: customNavItems }: NavBarProps = {}) {
       link: isZh ? "/zh/pricing" : "/pricing",
     },
     {
-      title: isZh ? "博客" : "Blog",
-      link: isZh ? "/zh/blog" : "/blog",
-    },
-    {
-      title: isZh ? "文档" : "Docs",
-      link: isZh ? "/zh/docs" : "/docs",
-    },
-    {
       title: isZh ? "联系我们" : "Contact",
       link: isZh ? "/zh/contact" : "/contact",
     },

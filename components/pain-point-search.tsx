@@ -1,9 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "./button";
 import { PainPointResults } from "./pain-point-results";
+import {
+  getGuestUsageCount,
+  incrementGuestUsage,
+  hasGuestQuota,
+  getRemainingGuestQuota,
+  clearGuestUsage,
+} from "@/lib/usage-tracker";
 
 // 分析结果类型定义
 interface AnalysisResult {
@@ -46,7 +54,9 @@ const PickaxeIcon = ({ className }: { className?: string }) => (
 
 export const PainPointSearch = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const isZh = pathname.startsWith("/zh");
+  const { data: session, status: sessionStatus } = useSession();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(["reddit"]);
@@ -55,15 +65,32 @@ export const PainPointSearch = () => {
   const [showResults, setShowResults] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [redditPosts, setRedditPosts] = useState<RedditPost[]>([]);
+  const [xPosts, setXPosts] = useState<RedditPost[]>([]); // 新增：X平台帖子
   const [statusMessage, setStatusMessage] = useState("");
   const [error, setError] = useState("");
+  const [guestUsageCount, setGuestUsageCount] = useState(0);
   
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  // 管理游客使用次数：登录时清除，退出时重置
+  useEffect(() => {
+    if (sessionStatus === "authenticated") {
+      // 用户登录后，清除游客使用记录
+      clearGuestUsage();
+      setGuestUsageCount(0);
+      console.log('[PainPointSearch] User logged in, cleared guest usage');
+    } else if (sessionStatus === "unauthenticated") {
+      // 用户未登录，加载游客使用次数
+      const count = getGuestUsageCount();
+      setGuestUsageCount(count);
+      console.log('[PainPointSearch] Guest mode, usage count:', count);
+    }
+  }, [sessionStatus]);
+
   const content = {
     placeholder: isZh 
-      ? "试试 'Notion'、'邮件营销' 或 '备餐'..." 
-      : "Try 'Notion', 'Email Marketing', or 'Meal Prep'...",
+      ? "输入关键词或想了解的问题，如：'Notion 使用痛点'、'邮件营销难题'..." 
+      : "Enter keywords or questions, e.g., 'Notion pain points', 'Email marketing issues'...",
     buttonText: isZh ? "查找痛点" : "Find Pain Points",
     searchingText: isZh ? "正在搜索..." : "Searching...",
     quickChips: isZh 
@@ -150,12 +177,31 @@ export const PainPointSearch = () => {
     
     console.log("Search:", searchQuery, "Platforms:", selectedPlatforms);
     
+    // ===== 配额检查（前端预检查） =====
+    const isGuest = !session || !session.user;
+    
+    if (isGuest) {
+      // 游客模式：检查是否超过3次
+      if (!hasGuestQuota()) {
+        const confirmSignup = window.confirm(
+          isZh 
+            ? "您已达到免费使用限制（3次）。立即注册登录后每天可使用5次！" 
+            : "You've reached the free usage limit (3 searches). Sign up now for 5 searches per day!"
+        );
+        if (confirmSignup) {
+          router.push(isZh ? "/zh/signup" : "/signup");
+        }
+        return;
+      }
+    }
+    
     // 重置状态
     setIsSearching(true);
     setProgress(0);
     setShowResults(false);
     setAnalysisResult(null);
     setRedditPosts([]);
+    setXPosts([]); // 清空X帖子
     setError("");
     setStatusMessage(isZh ? "正在搜索..." : "Searching...");
     
@@ -167,11 +213,51 @@ export const PainPointSearch = () => {
         body: JSON.stringify({
           query: searchQuery.trim(),
           platforms: selectedPlatforms,
+          isGuest,
+          guestUsageCount: isGuest ? guestUsageCount : 0,
         }),
       });
 
+      // 处理配额超限错误
+      if (response.status === 403) {
+        const errorData = await response.json();
+        
+        if (errorData.error === 'GUEST_QUOTA_EXCEEDED') {
+          // 游客配额超限 -> 跳转注册页
+          const confirmSignup = window.confirm(
+            isZh 
+              ? errorData.message || "您已达到免费使用限制（3次）。立即注册登录后每天可使用5次！"
+              : errorData.message || "You've reached the free usage limit (3 searches). Sign up now for 5 searches per day!"
+          );
+          if (confirmSignup) {
+            router.push(isZh ? "/zh/signup" : "/signup");
+          }
+          setIsSearching(false);
+          return;
+        } else if (errorData.error === 'QUOTA_EXCEEDED') {
+          // 已登录用户配额超限 -> 跳转定价页
+          const confirmUpgrade = window.confirm(
+            isZh 
+              ? errorData.message || "您已达到今日搜索限制（5次）。立即升级会员以解锁无限搜索？"
+              : errorData.message || "You've reached your daily search limit (5 searches). Upgrade now for unlimited searches?"
+          );
+          if (confirmUpgrade) {
+            router.push(isZh ? "/zh/pricing" : "/pricing");
+          }
+          setIsSearching(false);
+          return;
+        }
+      }
+
       if (!response.ok) {
         throw new Error('Failed to start analysis');
+      }
+
+      // 如果是游客，增加使用次数
+      if (isGuest) {
+        const newCount = incrementGuestUsage();
+        setGuestUsageCount(newCount);
+        console.log('[PainPointSearch] Guest usage incremented to:', newCount);
       }
 
       // 处理SSE流
@@ -234,8 +320,15 @@ export const PainPointSearch = () => {
                     console.log('Parsed analysis:', analysisData);
                     setAnalysisResult(analysisData);
                     
-                    // 保存Reddit帖子数据
-                    if (event.searchData?.posts) {
+                    // 保存Reddit和X帖子数据
+                    if (event.searchData?.redditPosts) {
+                      setRedditPosts(event.searchData.redditPosts);
+                    }
+                    if (event.searchData?.xPosts) {
+                      setXPosts(event.searchData.xPosts);
+                    }
+                    // 向后兼容：如果使用旧格式
+                    if (event.searchData?.posts && !event.searchData?.redditPosts) {
                       setRedditPosts(event.searchData.posts);
                     }
                   } else {
@@ -283,6 +376,22 @@ export const PainPointSearch = () => {
   return (
     <>
       <div className="w-full max-w-3xl mx-auto mt-12 px-4 relative z-10">
+        {/* 配额提示 */}
+        {sessionStatus === "unauthenticated" && (
+          <div className="mb-4 text-center">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              {isZh 
+                ? `免费试用剩余 ${getRemainingGuestQuota()} 次搜索`
+                : `${getRemainingGuestQuota()} free searches remaining`}
+              {guestUsageCount >= 2 && (
+                <span className="ml-2 text-cyan-600 dark:text-cyan-400 font-medium">
+                  {isZh ? "（注册后每日5次）" : "(5/day after signup)"}
+                </span>
+              )}
+            </p>
+          </div>
+        )}
+
         {/* 搜索输入框 */}
         <div className="relative">
           <input
@@ -290,6 +399,11 @@ export const PainPointSearch = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={content.placeholder}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            data-form-type="other"
             className="w-full h-14 px-6 text-base rounded-2xl border-2 border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-black dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -324,8 +438,8 @@ export const PainPointSearch = () => {
           ))}
         </div>
 
-        {/* 平台选择 */}
-        <div className="flex gap-4 justify-center mt-6">
+        {/* 平台选择 - 已隐藏 */}
+        {/* <div className="flex gap-4 justify-center mt-6">
           {content.platforms.map((platform) => (
             <label
               key={platform.id}
@@ -365,7 +479,7 @@ export const PainPointSearch = () => {
               </span>
             </label>
           ))}
-        </div>
+        </div> */}
 
         {/* 进度条 */}
         {isSearching && (
@@ -396,6 +510,8 @@ export const PainPointSearch = () => {
           <PainPointResults 
             data={analysisResult} 
             redditPosts={redditPosts}
+            xPosts={xPosts}
+            query={searchQuery}
           />
         </div>
       )}
