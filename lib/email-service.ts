@@ -135,7 +135,7 @@ export function generateEmailHTML(data: EmailData): string {
       </head>
       <body>
         <div class="header">
-          <h1>🔔 SaltMine 新咨询</h1>
+          <h1>🔔 Lingtrue 新咨询</h1>
         </div>
         
         <div class="content">
@@ -169,8 +169,8 @@ export function generateEmailHTML(data: EmailData): string {
         </div>
         
         <div class="footer">
-          <p>此邮件由 SaltMine 联系表单自动生成</p>
-          <p>This email was automatically generated from SaltMine Contact Form</p>
+          <p>此邮件由 Lingtrue 联系表单自动生成</p>
+          <p>This email was automatically generated from Lingtrue Contact Form</p>
         </div>
       </body>
     </html>

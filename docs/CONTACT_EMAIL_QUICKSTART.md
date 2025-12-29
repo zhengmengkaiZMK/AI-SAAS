@@ -13,7 +13,7 @@
 2. 选择 **SMTP & API**
 3. 点击 **API Keys** 标签
 4. 点击 **Generate a new API key**
-5. 命名为 `SaltMine`
+5. 命名为 `Lingtrue`
 6. 复制生成的 Key（格式：`xkeysib-xxxxxx...`）
 
 ### 3️⃣ 配置环境变量
@@ -22,7 +22,7 @@
 ```bash
 # 邮件服务配置
 BREVO_API_KEY="xkeysib-你复制的API密钥"
-BREVO_FROM_EMAIL="noreply@saltmine.com"
+BREVO_FROM_EMAIL="noreply@lingtrue.com"
 ```
 
 ### 4️⃣ 重启开发服务器
@@ -72,7 +72,7 @@ npm run dev
 
 收到的邮件包含：
 ```
-主题：[SaltMine Contact] 来自 张三 的咨询
+主题：[Lingtrue Contact] 来自 张三 的咨询
 
 内容：
 👤 姓名：张三

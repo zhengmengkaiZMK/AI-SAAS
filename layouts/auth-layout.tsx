@@ -18,14 +18,14 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
                 "font-semibold text-xl text-center text-muted dark:text-muted-dark"
               )}
             >
-              SaltMine is used by thousands of users
+              Lingtrue is used by thousands of users
             </p>
             <p
               className={cn(
                 "font-normal text-base text-center text-neutral-500 dark:text-neutral-400 mt-8"
               )}
             >
-              With lots of AI applications around, SaltMine stands out with
+              With lots of AI applications around, Lingtrue stands out with
               its state of the art Shitposting capabilities.
             </p>
           </div>

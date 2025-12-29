@@ -7,9 +7,9 @@ import { Metadata } from "next";
 import { getAllZhBlogPosts } from "@/lib/blog-utils-zh";
 
 export const metadata: Metadata = {
-  title: "博客 - SaltMine",
+  title: "博客 - Lingtrue",
   description:
-    "SaltMine 是一个提供各种 AI 工具和服务的平台，帮助您掌握业务动态。生成图像、文本以及启动业务所需的一切。",
+    "Lingtrue 是一个提供各种 AI 工具和服务的平台，帮助您掌握业务动态。生成图像、文本以及启动业务所需的一切。",
   openGraph: {
     images: ["https://ai-saas-template-aceternity.vercel.app/banner.png"],
   },

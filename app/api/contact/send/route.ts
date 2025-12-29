@@ -21,7 +21,7 @@ function generateEmailTemplate(data: {
   });
 
   return {
-    subject: `[SaltMine Contact] 来自 ${data.name} 的咨询`,
+    subject: `[Lingtrue Contact] 来自 ${data.name} 的咨询`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -109,7 +109,7 @@ function generateEmailTemplate(data: {
         </head>
         <body>
           <div class="header">
-            <h1>🔔 SaltMine 新咨询</h1>
+            <h1>🔔 Lingtrue 新咨询</h1>
           </div>
           
           <div class="content">
@@ -149,14 +149,14 @@ function generateEmailTemplate(data: {
           </div>
           
           <div class="footer">
-            <p>此邮件由 SaltMine 联系表单自动生成</p>
-            <p>This email was automatically generated from SaltMine Contact Form</p>
+            <p>此邮件由 Lingtrue 联系表单自动生成</p>
+            <p>This email was automatically generated from Lingtrue Contact Form</p>
           </div>
         </body>
       </html>
     `,
     text: `
-SaltMine 新的联系表单提交
+Lingtrue 新的联系表单提交
 ======================
 
 姓名: ${data.name}
@@ -168,7 +168,7 @@ ${data.message}
 
 ---
 提交时间: ${timestamp}
-此邮件由 SaltMine 联系表单自动生成
+此邮件由 Lingtrue 联系表单自动生成
 
 回复客户: ${data.email}
     `,

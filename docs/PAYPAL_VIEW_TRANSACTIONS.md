@@ -47,13 +47,13 @@
    ├─────────────────────────────────────────────────────────┤
    │  Dec 23, 2025                                           │
    │  ✅ Payment received from sb-buyer@personal.example.com │
-   │     Starter Monthly - SaltMine                          │
+   │     Starter Monthly - Lingtrue                          │
    │     +$0.01 USD                                          │
    │     Status: Completed                                   │
    │  ─────────────────────────────────────────────────────  │
    │  Dec 23, 2025                                           │
    │  ✅ Payment received from sb-buyer@personal.example.com │
-   │     Professional Monthly - SaltMine                     │
+   │     Professional Monthly - Lingtrue                     │
    │     +$12.00 USD                                         │
    │     Status: Completed                                   │
    └─────────────────────────────────────────────────────────┘
@@ -172,7 +172,7 @@ curl -v -X GET https://api-m.sandbox.paypal.com/v1/reporting/transactions \
 │  ────────────────────────────────────    │
 │  ✅ Dec 23, 2025                         │
 │     Payment from sb-buyer@personal...    │
-│     SaltMine - Starter Monthly           │
+│     Lingtrue - Starter Monthly           │
 │     +$0.01 USD                           │
 │     Fee: -$0.00 USD (测试环境无手续费)    │
 │     Net: +$0.01 USD                      │

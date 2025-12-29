@@ -36,7 +36,7 @@ export const Footer = () => {
             <div className="mr-4  md:flex mb-4">
               <Logo />
             </div>
-            <div>{isZh ? "版权所有" : "Copyright"} &copy; 2025 SaltMine</div>
+            <div>{isZh ? "版权所有" : "Copyright"} &copy; 2025 Lingtrue</div>
             <div className="mt-2">{isZh ? "保留所有权利" : "All rights reserved"}</div>
           </div>
           <div className="grid grid-cols-2 gap-10 items-start mt-10 md:mt-0">
@@ -66,7 +66,7 @@ export const Footer = () => {
         </div>
       </div>
       <p className="text-center text-5xl md:text-9xl lg:text-[18rem] font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 dark:from-neutral-950 to-neutral-200 dark:to-neutral-800 inset-x-0">
-        SALTMINE
+        LINGTRUE
       </p>
     </div>
   );
